@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BTCUSDT Futures analysis dashboard using Binance public REST data. Research only; no order execution.">
+    <title>BTCUSDT Futures AI Analysis Assistant Pro | Cyberpunk Command Center</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#04060A',
+                            panel: '#0B0F19',
+                            border: '#1A233A',
+                            borderGlow: '#00E5FF33',
+                            cyan: '#00E5FF',
+                            blue: '#2979FF',
+                            magenta: '#FF4FD8',
+                            green: '#00FF9C',
+                            yellow: '#FFB300',
+                            red: '#FF1744',
+                            purple: '#9D4EDD'
+                        }
+                    },
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite ease-in-out',
+                        'scanline': 'scanline 8s linear infinite',
+                        'hud-spin': 'spin 12s linear infinite'
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 8px currentColor)' },
+                            '50%': { opacity: '0.6', filter: 'drop-shadow(0 0 2px currentColor)' }
+                        },
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(1000%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel JS -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lightweight Charts (Production Build) -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+        
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #04060A;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism HUD Panels */
+        .hud-panel {
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .hud-panel-active {
+            border-color: rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+        }
+
+        /* Neon Glow Levels */
+        .glow-high .neon-cyan { filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)); }
+        .glow-high .neon-green { filter: drop-shadow(0 0 8px rgba(0, 255, 156, 0.8)); }
+        .glow-high .neon-red { filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.8)); }
+        .glow-high .neon-magenta { filter: drop-shadow(0 0 8px rgba(255, 79, 216, 0.8)); }
+        .glow-high .neon-yellow { filter: drop-shadow(0 0 8px rgba(255, 179, 0, 0.8)); }
+
+        .glow-medium .neon-cyan { filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.5)); }
+        .glow-medium .neon-green { filter: drop-shadow(0 0 4px rgba(0, 255, 156, 0.5)); }
+        .glow-medium .neon-red { filter: drop-shadow(0 0 4px rgba(255, 23, 68, 0.5)); }
+        .glow-medium .neon-magenta { filter: drop-shadow(0 0 4px rgba(255, 79, 216, 0.5)); }
+        .glow-medium .neon-yellow { filter: drop-shadow(0 0 4px rgba(255, 179, 0, 0.5)); }
+
+        .glow-low .neon-cyan { filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.3)); }
+        .glow-low .neon-green { filter: drop-shadow(0 0 2px rgba(0, 255, 156, 0.3)); }
+        .glow-low .neon-red { filter: drop-shadow(0 0 2px rgba(255, 23, 68, 0.3)); }
+
+        .glow-off .neon-cyan,
+        .glow-off .neon-green,
+        .glow-off .neon-red,
+        .glow-off .neon-magenta,
+        .glow-off .neon-yellow { filter: none !important; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #04060A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1A233A;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00E5FF;
+        }
+
+        /* Tooltip style */
+        [data-tooltip] {
+            position: relative;
+        }
+        [data-tooltip]:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            background: #0B0F19;
+            color: #00E5FF;
+            border: 1px solid #00E5FF;
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            border-radius: 4px;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+            pointer-events: none;
+        }
+
+        /* Cyberpunk Command Center UX polish */
+        .hud-panel {
+            position: relative;
+            transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease, background-color .22s ease;
+        }
+        .hud-panel:hover {
+            border-color: rgba(0, 229, 255, .32);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .22), 0 0 18px rgba(0, 229, 255, .07);
+        }
+        button, input, select { transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, color .18s ease; }
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #00E5FF;
+            outline-offset: 3px;
+        }
+        .status-led {
+            display: inline-block; width: 8px; height: 8px; flex: 0 0 8px;
+            border-radius: 999px; box-shadow: 0 0 8px currentColor;
+        }
+        .status-led-live { color: #00FF9C; background: #00FF9C; animation: ledPulse 2s ease-in-out infinite; }
+        .status-led-wait { color: #FFB300; background: #FFB300; animation: ledPulse 1.4s ease-in-out infinite; }
+        .status-led-error { color: #FF1744; background: #FF1744; }
+        .hud-toast {
+            animation: toastIn .24s ease-out both;
+            backdrop-filter: blur(14px);
+        }
+        .hud-scanline { pointer-events:none; position:absolute; inset:0; overflow:hidden; border-radius:inherit; opacity:.14; }
+        .hud-scanline::after {
+            content:''; position:absolute; left:0; right:0; top:-30%; height:20%;
+            background:linear-gradient(180deg, transparent, rgba(0,229,255,.16), transparent);
+            animation: scanline 10s linear infinite;
+        }
+        @keyframes ledPulse { 0%,100% { opacity:1; } 50% { opacity:.48; } }
+        @keyframes toastIn { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:translateX(0); } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+        @media (max-width: 640px) {
+            .hud-panel:hover { transform:none; }
+            [data-tooltip]:hover::before { display:none; }
+        }
+
+        .theme-light {
+            background: #F3F7FC !important;
+            color: #172033 !important;
+        }
+        .theme-light header {
+            background: rgba(245, 249, 255, .96) !important;
+            border-color: #CBD5E1 !important;
+        }
+        .theme-light .hud-panel {
+            background: rgba(255, 255, 255, .94) !important;
+            border-color: rgba(41, 121, 255, .24) !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .07) !important;
+            color: #172033;
+        }
+        .theme-light .bg-cyber-bg { background-color: #EAF0F8 !important; }
+        .theme-light .bg-cyber-panel { background-color: #F8FAFD !important; }
+        .theme-light [class~="bg-cyber-panel/90"] { background-color: rgba(245,249,255,.96) !important; }
+        .theme-light .text-slate-100, .theme-light .text-slate-200,
+        .theme-light .text-slate-300, .theme-light .text-slate-400 { color: #334155 !important; }
+        .theme-light .text-slate-500 { color: #64748B !important; }
+        .theme-light input, .theme-light select { color: #172033; }
+        .theme-light .hud-panel .border-cyber-border { border-color: #CBD5E1 !important; }
+
+        /* Corner HUD Accents */
+        .hud-corner-tl {
+            position: absolute; top: 0; left: 0; width: 6px; height: 6px;
+            border-top: 2px solid #00E5FF; border-left: 2px solid #00E5FF;
+        }
+        .hud-corner-tr {
+            position: absolute; top: 0; right: 0; width: 6px; height: 6px;
+            border-top: 2px solid #00E5FF; border-right: 2px solid #00E5FF;
+        }
+        .hud-corner-bl {
+            position: absolute; bottom: 0; left: 0; width: 6px; height: 6px;
+            border-bottom: 2px solid #00E5FF; border-left: 2px solid #00E5FF;
+        }
+        .hud-corner-br {
+            position: absolute; bottom: 0; right: 0; width: 6px; height: 6px;
+            border-bottom: 2px solid #00E5FF; border-right: 2px solid #00E5FF;
+        }
+    </style>
+</head>
+<body class="bg-[#04060A] text-slate-200 antialiased min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // --- ICON SYSTEM SVG COMPONENTS ---
+        const Icons = {
+            Dashboard: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7" rx="1" strokeWidth="2"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" strokeWidth="2"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1" strokeWidth="2"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" strokeWidth="2"/>
+                </svg>
+            ),
+            Chart: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 16l4-4 4 4 6-6"/>
+                </svg>
+            ),
+            Brain: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2a5 5 0 00-5 5c0 1.3.5 2.5 1.3 3.4C6.5 11.2 5 13.4 5 16a5 5 0 0010 0c0-2.6-1.5-4.8-3.3-5.6.8-.9 1.3-2.1 1.3-3.4a5 5 0 00-5-5z"/>
+                </svg>
+            ),
+            Target: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                    <circle cx="12" cy="12" r="2"/>
+                </svg>
+            ),
+            Clock: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            ),
+            Gauge: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 15l3.5-3.5"/>
+                    <path d="M20.3 18c.4-1 .7-2 .7-3.1A9 9 0 0 0 3 14.9c0 1.1.3 2.1.7 3.1"/>
+                </svg>
+            ),
+            ShieldAlert: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            ),
+            Bell: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+            ),
+            RadioTower: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M4.9 19.1C3.1 17.3 2 14.8 2 12c0-2.8 1.1-5.3 2.9-7.1"/>
+                    <path d="M7.8 16.2c-1.1-1.1-1.8-2.6-1.8-4.2s.7-3.1 1.8-4.2"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M16.2 7.8c1.1 1.1 1.8 2.6 1.8 4.2s-.7 3.1-1.8 4.2"/>
+                    <path d="M19.1 4.9C20.9 6.7 22 9.2 22 12c0 2.8-1.1 5.3-2.9 7.1"/>
+                </svg>
+            ),
+            Settings: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            ),
+            Languages: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="m5 8 6 6"/>
+                    <path d="m4 14 6-6 2-3"/>
+                    <path d="M2 5h12"/>
+                    <path d="M7 2h1"/>
+                    <path d="m22 22-5-10-5 10"/>
+                    <path d="M14 18h6"/>
+                </svg>
+            ),
+            AlertTriangle: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            ),
+            CheckCircle: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            ),
+            Loader: ({ className = "w-4 h-4 animate-spin" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="2" x2="12" y2="6"/>
+                    <line x1="12" y1="18" x2="12" y2="22"/>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                    <line x1="2" y1="12" x2="6" y2="12"/>
+                    <line x1="18" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                </svg>
+            ),
+            Volume2: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+            ),
+            VolumeX: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <line x1="23" y1="9" x2="17" y2="15"/>
+                    <line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+            ),
+            Layers: ({ className = "w-4 h-4" }) => (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                    <polyline points="2 17 12 22 22 17"/>
+                    <polyline points="2 12 12 17 22 12"/>
+                </svg>
+            )
+        };
+
+        const SUPPORTED_TIMEFRAMES = [
+            { id: '1m', label: '1m', group: 'Scalp' },
+            { id: '3m', label: '3m', group: 'Scalp' },
+            { id: '5m', label: '5m', group: 'Scalp/Intraday' },
+            { id: '15m', label: '15m', group: 'Intraday' },
+            { id: '30m', label: '30m', group: 'Intraday' },
+            { id: '1h', label: '1h', group: 'Short Trend' },
+            { id: '2h', label: '2h', group: 'Mid Trend' },
+            { id: '4h', label: '4h', group: 'Swing' },
+            { id: '6h', label: '6h', group: 'Swing' },
+            { id: '8h', label: '8h', group: 'Swing' },
+            { id: '12h', label: '12h', group: 'Mid-Long Trend' },
+            { id: '1d', label: '1D', group: 'Daily' },
+            { id: '3d', label: '3D', group: 'Multi-Day' },
+            { id: '1w', label: '1W', group: 'Weekly' },
+            { id: '1M', label: '1M', group: 'Monthly' }
+        ];
+
+        const MTF_PRESETS = [
+            { name: '1D / 4H (Macro Trend)', tfs: ['1d', '4h'] },
+            { name: '4H / 1H (Market Structure)', tfs: ['4h', '1h'] },
+            { name: '1H / 15m (Setup Finder)', tfs: ['1h', '15m'] },
+            { name: '15m / 5m (Entry Trigger)', tfs: ['15m', '5m'] },
+            { name: '5m / 1m (Scalp Timing)', tfs: ['5m', '1m'] }
+        ];
+
+        const DEFAULT_LAYER_SETTINGS = {
+            ema20: { visible: true, color: '#00E5FF', width: 2, style: 0, glow: 'medium', name: 'EMA 20' },
+            ema50: { visible: true, color: '#FFB300', width: 2, style: 0, glow: 'low', name: 'EMA 50' },
+            ema200: { visible: true, color: '#9D4EDD', width: 2, style: 0, glow: 'low', name: 'EMA 200' },
+            vwap: { visible: true, color: '#FF4FD8', width: 2, style: 0, glow: 'medium', name: 'VWAP' },
+            donchianUpper: { visible: true, color: '#00FF9C', width: 1, style: 2, glow: 'low', name: 'Donchian Upper' },
+            donchianMiddle: { visible: true, color: '#90A4AE', width: 1, style: 2, glow: 'off', name: 'Donchian Middle' },
+            donchianLower: { visible: true, color: '#FF1744', width: 1, style: 2, glow: 'low', name: 'Donchian Lower' },
+            support: { visible: true, color: '#00FF9C', width: 2, style: 1, glow: 'high', name: 'Support Level' },
+            resistance: { visible: true, color: '#FF1744', width: 2, style: 1, glow: 'high', name: 'Resistance Level' },
+            swingHL: { visible: true, color: '#80D8FF', width: 1, style: 0, glow: 'low', name: 'Swing High/Low' },
+            bos: { visible: true, color: '#00FF9C', width: 2, style: 1, glow: 'high', name: 'BOS Marker' },
+            choch: { visible: true, color: '#FFB300', width: 2, style: 1, glow: 'high', name: 'CHoCH Marker' },
+            retest: { visible: true, color: '#E0F7FA', width: 1, style: 2, glow: 'low', name: 'Retest Marker' },
+            supplyZone: { visible: true, color: 'rgba(255,23,68,0.15)', width: 1, style: 0, glow: 'low', name: 'Supply Zone' },
+            demandZone: { visible: true, color: 'rgba(0,255,156,0.15)', width: 1, style: 0, glow: 'low', name: 'Demand Zone' },
+            pdhl: { visible: true, color: '#FFB300', width: 1, style: 2, glow: 'low', name: 'Prev Day High/Low' },
+            pwhl: { visible: false, color: '#CE93D8', width: 1, style: 2, glow: 'off', name: 'Prev Week High/Low' },
+            entryPlan: { visible: true, color: '#00E5FF', width: 2, style: 1, glow: 'medium', name: 'Entry Line' },
+            slPlan: { visible: true, color: '#FF1744', width: 2, style: 1, glow: 'high', name: 'Stop Loss' },
+            tpPlan: { visible: true, color: '#00FF9C', width: 2, style: 1, glow: 'high', name: 'Take Profit' }
+        };
+
+        const I18N = {
+            th: {
+                title: "ศูนย์วิเคราะห์ BTCUSDT Futures AI",
+                subtitle: "วิเคราะห์หลายกรอบเวลา · Binance REST · โหมดวิเคราะห์เท่านั้น",
+                price: "ราคาตลาด",
+                change24h: "เปลี่ยนแปลง 24 ชม.",
+                dataStatus: "สถานะข้อมูลตลาด",
+                statusConnected: "เชื่อมต่อ Binance REST แล้ว",
+                statusLoading: "กำลังโหลดข้อมูลตลาด...",
+                statusError: "การเชื่อมต่อขัดข้อง",
+                statusStale: "ข้อมูลตลาดอาจล้าสมัย",
+                tabDashboard: "แดชบอร์ดและกราฟ",
+                tabMTF: "วิเคราะห์หลายกรอบเวลา",
+                tabLayers: "ตั้งค่าเส้นและแสง",
+                tabRiskCalc: "คำนวณความเสี่ยงและเลเวอเรจ",
+                glowLevel: "ระดับแสงนีออน",
+                signalLong: "มุมมอง LONG",
+                signalShort: "มุมมอง SHORT",
+                signalWait: "รอจังหวะ",
+                signalConflict: "สัญญาณต่างกรอบเวลาขัดแย้ง",
+                retryBtn: "เชื่อมต่อข้อมูลใหม่",
+                indicatorLegend: "ตั้งค่าอินดิเคเตอร์",
+                rsiTitle: "RSI (14) วัดโมเมนตัม",
+                macdTitle: "MACD (12, 26, 9)",
+                volTitle: "ปริมาณซื้อขายและ SMA 20",
+                atrTitle: "ATR (14) ช่วงความผันผวน",
+                leverageTitle: "เลเวอเรจ Futures (1x - 125x)",
+                leverageWarnHigh: "⚠️ ความเสี่ยงสูง: เลเวอเรจตั้งแต่ 20x เพิ่มความเสี่ยงถูกล้างพอร์ตอย่างมาก",
+                leverageWarnExtreme: "🚨 ความเสี่ยงวิกฤต: เลเวอเรจตั้งแต่ 50x มีความเสี่ยงถูกล้างพอร์ตอย่างรุนแรง",
+                capital: "เงินทุนพอร์ตทั้งหมด ($)",
+                riskPercent: "ความเสี่ยงต่อรายการ (%)",
+                takerFee: "ค่าธรรมเนียม Taker (%)",
+                positionNotional: "มูลค่าสถานะโดยประมาณ ($)",
+                initialMargin: "มาร์จินเริ่มต้นโดยประมาณ ($)",
+                estFees: "ค่าธรรมเนียมไป-กลับโดยประมาณ ($)",
+                reqBuffer: "เงินสำรองที่แนะนำ ($)",
+                liqDisclaimer: "เป็นค่าประมาณ ราคา Liquidation จริงต้องตรวจสอบตาม Risk Bracket ของ Binance",
+                limitNotVerified: "ยังไม่ได้ยืนยันเพดานเลเวอเรจของบัญชี Binance ของคุณ",
+                customTFNote: "⚠️ กรอบเวลานี้อาจไม่ตรงกับค่ามาตรฐานที่แนะนำ: 15m / 1H / 4H"
+            },
+            en: {
+                title: "BTCUSDT Futures AI Analysis Center",
+                subtitle: "Multi-timeframe analysis · Binance REST · Research mode only",
+                price: "MARKET PRICE",
+                change24h: "24H CHANGE",
+                dataStatus: "MARKET DATA STATUS",
+                statusConnected: "BINANCE REST CONNECTED",
+                statusLoading: "LOADING MARKET DATA...",
+                statusError: "CONNECTION DISRUPTED",
+                statusStale: "STALE MARKET DATA",
+                tabDashboard: "DASHBOARD & CHARTS",
+                tabMTF: "MULTI-TIMEFRAME ANALYSIS",
+                tabLayers: "LAYERS & GLOW SETTINGS",
+                tabRiskCalc: "RISK & LEVERAGE CALCULATOR",
+                glowLevel: "NEON GLOW LEVEL",
+                signalLong: "LONG VIEW",
+                signalShort: "SHORT VIEW",
+                signalWait: "WAIT",
+                signalConflict: "MULTI-TIMEFRAME CONFLICT",
+                retryBtn: "RECONNECT DATA",
+                indicatorLegend: "INDICATOR SETTINGS",
+                rsiTitle: "RSI (14) MOMENTUM",
+                macdTitle: "MACD (12, 26, 9)",
+                volTitle: "VOLUME & SMA 20",
+                atrTitle: "ATR (14) VOLATILITY RANGE",
+                leverageTitle: "FUTURES LEVERAGE (1x - 125x)",
+                leverageWarnHigh: "⚠️ HIGH RISK: Leverage ≥20x significantly increases liquidation risk.",
+                leverageWarnExtreme: "🚨 CRITICAL: Leverage ≥50x carries extreme liquidation risk.",
+                capital: "TOTAL PORTFOLIO CAPITAL ($)",
+                riskPercent: "RISK PER TRADE (%)",
+                takerFee: "TAKER FEE (%)",
+                positionNotional: "EST. POSITION NOTIONAL ($)",
+                initialMargin: "EST. INITIAL MARGIN ($)",
+                estFees: "EST. ROUND-TRIP FEES ($)",
+                reqBuffer: "RECOMMENDED RESERVE ($)",
+                liqDisclaimer: "Estimated values — actual liquidation price requires Binance risk-bracket verification.",
+                limitNotVerified: "Account-specific Binance leverage limits have not been verified.",
+                customTFNote: "⚠️ This timeframe differs from the standard recommended 15m / 1H / 4H setup."
+            }
+        };
+
+        const Indicators = {
+            calcEMA: (candles, period) => {
+                if (!candles || candles.length < period) return Array(candles ? candles.length : 0).fill(null);
+                const k = 2 / (period + 1);
+                const ema = [];
+                let sum = 0;
+                for (let i = 0; i < period; i++) {
+                    sum += candles[i].close;
+                    ema.push(null);
+                }
+                let prevEma = sum / period;
+                ema[period - 1] = prevEma;
+
+                for (let i = period; i < candles.length; i++) {
+                    const currentEma = (candles[i].close * k) + (prevEma * (1 - k));
+                    ema.push(currentEma);
+                    prevEma = currentEma;
+                }
+                return ema;
+            },
+            calcSMA: (data, period) => {
+                if (!data || data.length < period) return Array(data ? data.length : 0).fill(null);
+                const sma = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i < period - 1) {
+                        sma.push(null);
+                    } else {
+                        let sum = 0;
+                        for (let j = 0; j < period; j++) {
+                            sum += (typeof data[i - j] === 'number' ? data[i - j] : data[i - j].volume);
+                        }
+                        sma.push(sum / period);
+                    }
+                }
+                return sma;
+            },
+            calcVWAP: (candles) => {
+                if (!candles || candles.length === 0) return [];
+                let cumVol = 0;
+                let cumTPV = 0;
+                return candles.map(c => {
+                    const tp = (c.high + c.low + c.close) / 3;
+                    cumVol += c.volume;
+                    cumTPV += tp * c.volume;
+                    return cumVol > 0 ? cumTPV / cumVol : c.close;
+                });
+            },
+            calcRSI: (candles, period = 14) => {
+                if (!candles || candles.length <= period) return Array(candles ? candles.length : 0).fill(null);
+                const rsi = Array(candles.length).fill(null);
+                let gains = 0;
+                let losses = 0;
+
+                for (let i = 1; i <= period; i++) {
+                    const change = candles[i].close - candles[i - 1].close;
+                    if (change >= 0) gains += change;
+                    else losses += Math.abs(change);
+                }
+
+                let avgGain = gains / period;
+                let avgLoss = losses / period;
+                rsi[period] = 100 - (100 / (1 + (avgGain / (avgLoss || 1))));
+
+                for (let i = period + 1; i < candles.length; i++) {
+                    const change = candles[i].close - candles[i - 1].close;
+                    const gain = change >= 0 ? change : 0;
+                    const loss = change < 0 ? Math.abs(change) : 0;
+
+                    avgGain = ((avgGain * (period - 1)) + gain) / period;
+                    avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+
+                    const rs = avgGain / (avgLoss || 0.00001);
+                    rsi[i] = 100 - (100 / (1 + rs));
+                }
+                return rsi;
+            },
+            calcMACD: (candles, fast = 12, slow = 26, signal = 9) => {
+                const emaFast = Indicators.calcEMA(candles, fast);
+                const emaSlow = Indicators.calcEMA(candles, slow);
+                const macdLine = Array(candles.length).fill(null);
+                const dummyCandles = [];
+
+                for (let i = 0; i < candles.length; i++) {
+                    if (emaFast[i] !== null && emaSlow[i] !== null) {
+                        macdLine[i] = emaFast[i] - emaSlow[i];
+                        dummyCandles.push({ close: macdLine[i] });
+                    } else {
+                        dummyCandles.push({ close: 0 });
+                    }
+                }
+
+                const signalLine = Indicators.calcEMA(dummyCandles, signal);
+                const histogram = Array(candles.length).fill(null);
+
+                for (let i = 0; i < candles.length; i++) {
+                    if (macdLine[i] !== null && signalLine[i] !== null) {
+                        histogram[i] = macdLine[i] - signalLine[i];
+                    }
+                }
+                return { macd: macdLine, signal: signalLine, histogram };
+            },
+            calcATR: (candles, period = 14) => {
+                if (!candles || candles.length <= period) return Array(candles ? candles.length : 0).fill(null);
+                const tr = [candles[0].high - candles[0].low];
+                for (let i = 1; i < candles.length; i++) {
+                    const h = candles[i].high;
+                    const l = candles[i].low;
+                    const prevC = candles[i - 1].close;
+                    tr.push(Math.max(h - l, Math.abs(h - prevC), Math.abs(l - prevC)));
+                }
+                const atr = Array(candles.length).fill(null);
+                let sum = 0;
+                for (let i = 0; i < period; i++) sum += tr[i];
+                atr[period - 1] = sum / period;
+
+                for (let i = period; i < candles.length; i++) {
+                    atr[i] = ((atr[i - 1] * (period - 1)) + tr[i]) / period;
+                }
+                return atr;
+            },
+            calcDonchian: (candles, period = 20) => {
+                if (!candles || candles.length < period) return { upper: [], lower: [], middle: [] };
+                const upper = [];
+                const lower = [];
+                const middle = [];
+
+                for (let i = 0; i < candles.length; i++) {
+                    if (i < period) {
+                        upper.push(null);
+                        lower.push(null);
+                        middle.push(null);
+                    } else {
+                        let maxHigh = -Infinity;
+                        let minLow = Infinity;
+                        for (let j = 1; j <= period; j++) {
+                            const c = candles[i - j];
+                            if (c.high > maxHigh) maxHigh = c.high;
+                            if (c.low < minLow) minLow = c.low;
+                        }
+                        upper.push(maxHigh);
+                        lower.push(minLow);
+                        middle.push((maxHigh + minLow) / 2);
+                    }
+                }
+                return { upper, lower, middle };
+            }
+        };
+
+        const TF_MS = { '1m':60000, '3m':180000, '5m':300000, '15m':900000, '30m':1800000, '1h':3600000, '2h':7200000, '4h':14400000, '6h':21600000, '8h':28800000, '12h':43200000, '1d':86400000, '3d':259200000, '1w':604800000, '1M':2592000000 };
+
+        async function fetchJson(url, timeoutMs = 10000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+                if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                if (e.name === 'AbortError') throw new Error('หมดเวลารอข้อมูลจาก Binance / Binance request timed out');
+                throw e;
+            } finally { clearTimeout(timer); }
+        }
+
+        async function fetchBinanceKlines(symbol = 'BTCUSDT', interval = '1h', limit = 250) {
+            // Futures only: never silently substitute spot data for futures analysis.
+            const safeLimit = Math.min(500, Math.max(210, Number(limit) || 250));
+            const data = await fetchJson(`https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${safeLimit}`);
+            if (!Array.isArray(data) || data.length === 0) throw new Error('Binance ไม่ส่งข้อมูลแท่งเทียนกลับมา / No candle data returned');
+            const now = Date.now();
+            const duration = TF_MS[interval] || 3600000;
+            const candles = data.map(d => ({
+                time: Math.floor(Number(d[0]) / 1000), openTime: Number(d[0]), closeTime: Number(d[6]),
+                open: Number(d[1]), high: Number(d[2]), low: Number(d[3]), close: Number(d[4]), volume: Number(d[5]),
+                isClosed: Number(d[6]) < now
+            })).filter(c => [c.open, c.high, c.low, c.close, c.volume].every(Number.isFinite) && c.close > 0 && c.high >= c.low);
+            const closed = candles.filter(c => c.isClosed);
+            if (closed.length < 200) throw new Error(`แท่งเทียนปิดแล้วมีเพียง ${closed.length} แท่ง ต้องมีอย่างน้อย 200 แท่งสำหรับ EMA 200 / Need 200 closed candles for EMA 200`);
+            return closed;
+        }
+
+        async function fetchBinance24hTicker(symbol = 'BTCUSDT') {
+            const data = await fetchJson(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${encodeURIComponent(symbol)}`);
+            const values = ['lastPrice','priceChangePercent','highPrice','lowPrice','volume'];
+            if (!data || values.some(k => !Number.isFinite(Number(data[k])))) throw new Error('ข้อมูล Ticker 24 ชั่วโมงไม่ถูกต้อง / Invalid 24h ticker payload');
+            return { price: Number(data.lastPrice), change: Number(data.priceChangePercent), high: Number(data.highPrice), low: Number(data.lowPrice), volume: Number(data.volume) };
+        }
+
+        function TradingChart({ candles, theme, layerSettings, glowLevel, analysis }) {
+            const chartContainerRef = useRef(null);
+            const overlayCanvasRef = useRef(null);
+            const chartRef = useRef(null);
+            const seriesMapRef = useRef({});
+
+            useEffect(() => {
+                if (!chartContainerRef.current) return;
+                if (typeof LightweightCharts === 'undefined') return;
+
+                try {
+                    const isDark = theme === 'dark';
+                    const chart = LightweightCharts.createChart(chartContainerRef.current, {
+                        layout: {
+                            background: { color: isDark ? '#04060A' : '#FFFFFF' },
+                            textColor: isDark ? '#94A3B8' : '#334155',
+                        },
+                        grid: {
+                            vertLines: { color: isDark ? 'rgba(26, 35, 58, 0.4)' : '#E2E8F0' },
+                            horzLines: { color: isDark ? 'rgba(26, 35, 58, 0.4)' : '#E2E8F0' },
+                        },
+                        crosshair: {
+                            mode: LightweightCharts.CrosshairMode ? LightweightCharts.CrosshairMode.Normal : 0,
+                        },
+                        rightPriceScale: {
+                            borderColor: isDark ? '#1A233A' : '#CBD5E1',
+                        },
+                        timeScale: {
+                            borderColor: isDark ? '#1A233A' : '#CBD5E1',
+                            timeVisible: true,
+                            secondsVisible: false,
+                        },
+                    });
+
+                    const candlestickSeries = chart.addCandlestickSeries({
+                        upColor: '#00FF9C',
+                        downColor: '#FF1744',
+                        borderVisible: false,
+                        wickUpColor: '#00FF9C',
+                        wickDownColor: '#FF1744',
+                    });
+
+                    chartRef.current = chart;
+                    seriesMapRef.current = { candlestick: candlestickSeries };
+
+                    const handleResize = () => {
+                        if (chartContainerRef.current && chartRef.current) {
+                            const width = chartContainerRef.current.clientWidth;
+                            const height = chartContainerRef.current.clientHeight;
+                            try {
+                                chartRef.current.applyOptions({ width, height });
+                            } catch (e) {}
+                            if (overlayCanvasRef.current) {
+                                overlayCanvasRef.current.width = width;
+                                overlayCanvasRef.current.height = height;
+                            }
+                        }
+                    };
+
+                    window.addEventListener('resize', handleResize);
+                    handleResize();
+
+                    return () => {
+                        window.removeEventListener('resize', handleResize);
+                        if (chartRef.current) {
+                            try {
+                                chartRef.current.remove();
+                            } catch(e) {}
+                            chartRef.current = null;
+                            seriesMapRef.current = {};
+                        }
+                    };
+                } catch (e) {
+                    console.error("Error creating chart:", e);
+                }
+            }, [theme]);
+
+            useEffect(() => {
+                if (!chartRef.current || !candles || candles.length === 0 || !seriesMapRef.current.candlestick) return;
+
+                const chart = chartRef.current;
+                const formatted = candles.map(c => ({
+                    time: c.time,
+                    open: c.open,
+                    high: c.high,
+                    low: c.low,
+                    close: c.close
+                }));
+                try {
+                    seriesMapRef.current.candlestick.setData(formatted);
+                } catch (e) {
+                    return;
+                }
+
+                const syncLineSeries = (key, dataArray) => {
+                    if (!chartRef.current) return;
+                    const setting = layerSettings[key];
+                    if (!setting || !setting.visible || !dataArray || dataArray.length === 0) {
+                        if (seriesMapRef.current[key]) {
+                            try {
+                                chart.removeSeries(seriesMapRef.current[key]);
+                            } catch (e) {}
+                            delete seriesMapRef.current[key];
+                        }
+                        return;
+                    }
+
+                    try {
+                        if (!seriesMapRef.current[key]) {
+                            seriesMapRef.current[key] = chart.addLineSeries({
+                                color: setting.color,
+                                lineWidth: setting.width,
+                                lineStyle: setting.style,
+                                crosshairMarkerVisible: true,
+                            });
+                        } else {
+                            seriesMapRef.current[key].applyOptions({
+                                color: setting.color,
+                                lineWidth: setting.width,
+                                lineStyle: setting.style,
+                            });
+                        }
+
+                        const seriesData = [];
+                        for (let i = 0; i < candles.length; i++) {
+                            if (dataArray[i] !== null && dataArray[i] !== undefined) {
+                                seriesData.push({ time: candles[i].time, value: dataArray[i] });
+                            }
+                        }
+                        seriesMapRef.current[key].setData(seriesData);
+                    } catch (e) {
+                        delete seriesMapRef.current[key];
+                    }
+                };
+
+                const ema20 = Indicators.calcEMA(candles, 20);
+                const ema50 = Indicators.calcEMA(candles, 50);
+                const ema200 = Indicators.calcEMA(candles, 200);
+                const vwap = Indicators.calcVWAP(candles);
+                const donchian = Indicators.calcDonchian(candles, 20);
+
+                syncLineSeries('ema20', ema20);
+                syncLineSeries('ema50', ema50);
+                syncLineSeries('ema200', ema200);
+                syncLineSeries('vwap', vwap);
+                syncLineSeries('donchianUpper', donchian.upper);
+                syncLineSeries('donchianMiddle', donchian.middle);
+                syncLineSeries('donchianLower', donchian.lower);
+
+                if (analysis) {
+                    const priceLines = [
+                        { key: 'support', val: analysis.pivots ? analysis.pivots.s1 : null },
+                        { key: 'resistance', val: analysis.pivots ? analysis.pivots.r1 : null },
+                        { key: 'entryPlan', val: analysis.strat2 ? analysis.strat2.entry : null },
+                        { key: 'slPlan', val: analysis.strat2 ? analysis.strat2.sl : null },
+                        { key: 'tpPlan', val: analysis.strat2 ? analysis.strat2.tp : null },
+                        { key: 'pdhl', val: analysis.pivots ? analysis.pivots.p : null },
+                    ];
+
+                    priceLines.forEach(({ key, val }) => {
+                        if (val !== null) {
+                            const lineData = candles.map(() => val);
+                            syncLineSeries(key, lineData);
+                        }
+                    });
+                }
+
+                if (overlayCanvasRef.current && chartRef.current && seriesMapRef.current.candlestick) {
+                    const canvas = overlayCanvasRef.current;
+                    const ctx = canvas.getContext('2d');
+                    const mainSeries = seriesMapRef.current.candlestick;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    if (analysis && candles.length > 5) {
+                        try {
+                            if (layerSettings.supplyZone && layerSettings.supplyZone.visible && analysis.pivots) {
+                                const topY = mainSeries.priceToCoordinate(analysis.pivots.r2);
+                                const bottomY = mainSeries.priceToCoordinate(analysis.pivots.r1);
+                                if (topY !== null && bottomY !== null) {
+                                    ctx.fillStyle = layerSettings.supplyZone.color;
+                                    ctx.fillRect(0, Math.min(topY, bottomY), canvas.width, Math.abs(bottomY - topY));
+                                }
+                            }
+
+                            if (layerSettings.demandZone && layerSettings.demandZone.visible && analysis.pivots) {
+                                const topY = mainSeries.priceToCoordinate(analysis.pivots.s1);
+                                const bottomY = mainSeries.priceToCoordinate(analysis.pivots.s2);
+                                if (topY !== null && bottomY !== null) {
+                                    ctx.fillStyle = layerSettings.demandZone.color;
+                                    ctx.fillRect(0, Math.min(topY, bottomY), canvas.width, Math.abs(bottomY - topY));
+                                }
+                            }
+
+                            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                            if (layerSettings.bos && layerSettings.bos.visible && analysis.donUpper) {
+                                const y = mainSeries.priceToCoordinate(analysis.donUpper);
+                                if (y !== null) {
+                                    ctx.fillStyle = layerSettings.bos.color;
+                                    if (glowLevel !== 'off') {
+                                        ctx.shadowColor = layerSettings.bos.color;
+                                        ctx.shadowBlur = glowLevel === 'high' ? 12 : glowLevel === 'medium' ? 6 : 2;
+                                    }
+                                    ctx.fillText("⚡ BOS (Bullish Breakout)", 20, y - 6);
+                                    ctx.shadowBlur = 0;
+                                }
+                            }
+
+                            if (layerSettings.choch && layerSettings.choch.visible && analysis.donLower) {
+                                const y = mainSeries.priceToCoordinate(analysis.donLower);
+                                if (y !== null) {
+                                    ctx.fillStyle = layerSettings.choch.color;
+                                    if (glowLevel !== 'off') {
+                                        ctx.shadowColor = layerSettings.choch.color;
+                                        ctx.shadowBlur = glowLevel === 'high' ? 12 : glowLevel === 'medium' ? 6 : 2;
+                                    }
+                                    ctx.fillText("🔥 CHoCH (Bearish Shift)", 20, y + 15);
+                                    ctx.shadowBlur = 0;
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+            }, [candles, layerSettings, analysis, glowLevel]);
+
+            return (
+                <div className="relative w-full h-full min-h-[380px]">
+                    <div ref={chartContainerRef} className="w-full h-full" />
+                    <canvas
+                        ref={overlayCanvasRef}
+                        className="absolute inset-0 pointer-events-none z-10"
+                    />
+                </div>
+            );
+        }
+
+        function SubPanelChart({ title, type, candles, theme, glowLevel }) {
+            const containerRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!containerRef.current || !candles || candles.length === 0) return;
+                const isDark = theme === 'dark';
+
+                let chart = null;
+                try {
+                    chart = LightweightCharts.createChart(containerRef.current, {
+                        layout: {
+                            background: { color: isDark ? '#0B0F19' : '#F8FAFC' },
+                            textColor: isDark ? '#94A3B8' : '#475569',
+                        },
+                        grid: {
+                            vertLines: { color: isDark ? 'rgba(26, 35, 58, 0.3)' : '#E2E8F0' },
+                            horzLines: { color: isDark ? 'rgba(26, 35, 58, 0.3)' : '#E2E8F0' },
+                        },
+                        rightPriceScale: { borderColor: isDark ? '#1A233A' : '#CBD5E1' },
+                        timeScale: { visible: false },
+                    });
+
+                    chartRef.current = chart;
+
+                    if (type === 'RSI') {
+                        const rsiData = Indicators.calcRSI(candles, 14);
+                        const rsiSeries = chart.addLineSeries({ color: '#00E5FF', lineWidth: 2 });
+                        const line70 = chart.addLineSeries({ color: '#FF1744', lineWidth: 1, lineStyle: 2 });
+                        const line50 = chart.addLineSeries({ color: '#90A4AE', lineWidth: 1, lineStyle: 2 });
+                        const line30 = chart.addLineSeries({ color: '#00FF9C', lineWidth: 1, lineStyle: 2 });
+
+                        const formattedRsi = [];
+                        const f70 = [], f50 = [], f30 = [];
+                        for (let i = 0; i < candles.length; i++) {
+                            if (rsiData[i] !== null) {
+                                formattedRsi.push({ time: candles[i].time, value: rsiData[i] });
+                                f70.push({ time: candles[i].time, value: 70 });
+                                f50.push({ time: candles[i].time, value: 50 });
+                                f30.push({ time: candles[i].time, value: 30 });
+                            }
+                        }
+                        rsiSeries.setData(formattedRsi);
+                        line70.setData(f70);
+                        line50.setData(f50);
+                        line30.setData(f30);
+                    } else if (type === 'MACD') {
+                        const { macd, signal, histogram } = Indicators.calcMACD(candles, 12, 26, 9);
+                        const macdSeries = chart.addLineSeries({ color: '#2979FF', lineWidth: 2 });
+                        const signalSeries = chart.addLineSeries({ color: '#FF4FD8', lineWidth: 2 });
+                        const histSeries = chart.addHistogramSeries();
+
+                        const fMacd = [], fSig = [], fHist = [];
+                        for (let i = 0; i < candles.length; i++) {
+                            if (macd[i] !== null) {
+                                fMacd.push({ time: candles[i].time, value: macd[i] });
+                                fSig.push({ time: candles[i].time, value: signal[i] });
+                                fHist.push({
+                                    time: candles[i].time,
+                                    value: histogram[i],
+                                    color: histogram[i] >= 0 ? '#00FF9C' : '#FF1744'
+                                });
+                            }
+                        }
+                        macdSeries.setData(fMacd);
+                        signalSeries.setData(fSig);
+                        histSeries.setData(fHist);
+                    } else if (type === 'VOLUME') {
+                        const volSeries = chart.addHistogramSeries();
+                        const volSma = Indicators.calcSMA(candles.map(c => c.volume), 20);
+                        const smaSeries = chart.addLineSeries({ color: '#FFB300', lineWidth: 2 });
+
+                        const fVol = [], fSma = [];
+                        for (let i = 0; i < candles.length; i++) {
+                            const color = candles[i].close >= candles[i].open ? '#00FF9C' : '#FF1744';
+                            fVol.push({ time: candles[i].time, value: candles[i].volume, color });
+                            if (volSma[i] !== null) {
+                                fSma.push({ time: candles[i].time, value: volSma[i] });
+                            }
+                        }
+                        volSeries.setData(fVol);
+                        smaSeries.setData(fSma);
+                    } else if (type === 'ATR') {
+                        const atrData = Indicators.calcATR(candles, 14);
+                        const atrSeries = chart.addLineSeries({ color: '#FFB300', lineWidth: 2 });
+                        const fAtr = [];
+                        for (let i = 0; i < candles.length; i++) {
+                            if (atrData[i] !== null) fAtr.push({ time: candles[i].time, value: atrData[i] });
+                        }
+                        atrSeries.setData(fAtr);
+                    }
+                } catch (e) {}
+
+                const handleResize = () => {
+                    if (containerRef.current && chartRef.current) {
+                        try {
+                            chartRef.current.applyOptions({
+                                width: containerRef.current.clientWidth,
+                                height: containerRef.current.clientHeight
+                            });
+                        } catch (e) {}
+                    }
+                };
+                window.addEventListener('resize', handleResize);
+                handleResize();
+
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    if (chartRef.current) {
+                        try {
+                            chartRef.current.remove();
+                        } catch (e) {}
+                        chartRef.current = null;
+                    }
+                };
+            }, [candles, type, theme]);
+
+            return (
+                <div className="hud-panel rounded-xl p-3 flex flex-col h-[150px] relative">
+                    <div className="hud-corner-tl" />
+                    <div className="hud-corner-br" />
+                    <span className="text-[11px] font-mono font-semibold text-cyan-400 mb-1 flex items-center gap-1.5">
+                        <Icons.Chart className="w-3.5 h-3.5" />
+                        {title}
+                    </span>
+                    <div ref={containerRef} className="w-full flex-1" />
+                </div>
+            );
+        }
+
+        function TradingViewWidget({ timeframe, theme, lang }) {
+            const hostRef = useRef(null);
+            const [loadState, setLoadState] = useState('loading');
+            const intervalMap = {
+                '1m': '1', '3m': '3', '5m': '5', '15m': '15', '30m': '30',
+                '1h': '60', '2h': '120', '4h': '240', '6h': '360', '8h': '480',
+                '12h': '720', '1d': 'D', '3d': '3D', '1w': 'W', '1M': 'M'
+            };
+
+            useEffect(() => {
+                const host = hostRef.current;
+                if (!host) return;
+                let cancelled = false;
+                setLoadState('loading');
+                host.innerHTML = '';
+
+                const outer = document.createElement('div');
+                outer.className = 'tradingview-widget-container';
+                outer.style.width = '100%';
+                outer.style.height = '100%';
+                const widget = document.createElement('div');
+                widget.className = 'tradingview-widget-container__widget';
+                widget.style.width = '100%';
+                widget.style.height = 'calc(100% - 24px)';
+                outer.appendChild(widget);
+                const attribution = document.createElement('div');
+                attribution.className = 'text-right text-[10px] text-slate-500 px-2 py-1';
+                const attributionLink = document.createElement('a');
+                attributionLink.href = 'https://www.tradingview.com/symbols/BTCUSDT.P/?exchange=BINANCE';
+                attributionLink.target = '_blank';
+                attributionLink.rel = 'noopener noreferrer';
+                attributionLink.textContent = 'TradingView · BINANCE:BTCUSDT.P';
+                attribution.appendChild(attributionLink);
+                outer.appendChild(attribution);
+
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+                script.async = true;
+                script.text = JSON.stringify({
+                    autosize: true,
+                    symbol: 'BINANCE:BTCUSDT.P',
+                    interval: intervalMap[timeframe] || '60',
+                    timezone: 'Etc/UTC',
+                    theme: theme === 'dark' ? 'dark' : 'light',
+                    style: '1',
+                    locale: lang === 'th' ? 'th' : 'en',
+                    allow_symbol_change: false,
+                    calendar: false,
+                    details: true,
+                    hide_side_toolbar: false,
+                    hide_top_toolbar: false,
+                    hide_legend: false,
+                    hide_volume: false,
+                    hotlist: false,
+                    save_image: true,
+                    withdateranges: true,
+                    support_host: 'https://www.tradingview.com'
+                });
+                script.onerror = () => { script.dataset.failed = '1'; if (!cancelled) setLoadState('error'); };
+                outer.appendChild(script);
+                host.appendChild(outer);
+                // The embed script has no public ready callback; don't claim live status based on script injection.
+                const checkTimer = window.setTimeout(() => {
+                    if (!cancelled && host.querySelector('iframe')) setLoadState('loaded');
+                    else if (!cancelled && script.dataset.failed !== '1') setLoadState('waiting');
+                }, 7000);
+                const observer = new MutationObserver(() => {
+                    if (!cancelled && host.querySelector('iframe')) setLoadState('loaded');
+                });
+                observer.observe(host, { childList: true, subtree: true });
+                return () => {
+                    cancelled = true;
+                    window.clearTimeout(checkTimer);
+                    observer.disconnect();
+                    host.innerHTML = '';
+                };
+            }, [timeframe, theme, lang]);
+
+            return (
+                <div className="relative w-full h-full min-h-[420px]">
+                    <div ref={hostRef} className="w-full h-full" />
+                    {loadState !== 'loaded' && (
+                        <div className="absolute left-3 top-3 z-10 max-w-[min(90%,420px)] rounded-lg border border-cyber-border bg-[#07101ddd] px-3 py-2 text-[11px] text-slate-300 shadow-lg pointer-events-none">
+                            {loadState === 'error'
+                                ? (lang === 'th' ? 'โหลด TradingView ไม่สำเร็จ — ตรวจอินเทอร์เน็ตหรือเปิดกราฟจากลิงก์ด้านล่าง' : 'TradingView failed to load — check internet or use the link below.')
+                                : loadState === 'waiting'
+                                    ? (lang === 'th' ? 'กำลังรอกราฟจาก TradingView… หากไม่ขึ้น ให้ตรวจส่วนขยายบล็อกโฆษณาหรือเครือข่าย' : 'Waiting for TradingView chart… check blockers or network if it does not appear.')
+                                    : (lang === 'th' ? 'กำลังโหลดกราฟ TradingView ของ Binance USDⓈ-M Perpetual…' : 'Loading Binance USDⓈ-M Perpetual chart from TradingView…')}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function App() {
+            const [lang, setLang] = useState('th');
+            const [theme, setTheme] = useState('dark');
+            const [timeframe, setTimeframe] = useState('1h');
+            const [chartProvider, setChartProvider] = useState('tradingview');
+            const [candles, setCandles] = useState([]);
+            const [ticker, setTicker] = useState({ price: 0, change: 0, high: 0, low: 0, volume: 0 });
+            const [layerSettings, setLayerSettings] = useState(DEFAULT_LAYER_SETTINGS);
+            const [glowLevel, setGlowLevel] = useState('medium'); // 'off' | 'low' | 'medium' | 'high'
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [dataStatus, setDataStatus] = useState('loading'); // 'loading' | 'connected' | 'error' | 'stale'
+            const [errorMessage, setErrorMessage] = useState(null);
+            const [lastUpdateUTC, setLastUpdateUTC] = useState('');
+            const [lastUpdateTH, setLastUpdateTH] = useState('');
+
+            // Notifications HUD System
+            // Only real application events are added here; never seed fake connection/signal alerts.
+            const [notifications, setNotifications] = useState([]);
+            const [toasts, setToasts] = useState([]);
+            const [isNotifOpen, setIsNotifOpen] = useState(false);
+            const [soundEnabled, setSoundEnabled] = useState(false);
+            const requestInFlight = useRef(false);
+            const candlesRef = useRef([]);
+            const lastConnectionState = useRef(null);
+            const lastSignalState = useRef(null);
+            const lastAlertAt = useRef({});
+            const [lastSuccessfulAt, setLastSuccessfulAt] = useState(0);
+            const tx = (th, en) => lang === 'th' ? th : en;
+
+            // Multi-Timeframe Data Cache
+            const [mtfData, setMtfData] = useState({});
+            const [mtfSelectedPair, setMtfSelectedPair] = useState(['1d', '4h']);
+
+            const [leverage, setLeverage] = useState(20);
+            const [portfolioCapital, setPortfolioCapital] = useState(1000);
+            const [riskPercent, setRiskPercent] = useState(1);
+            const [takerFeeRate, setTakerFeeRate] = useState(0.05);
+
+            const t = I18N[lang];
+            candlesRef.current = candles;
+
+            const addNotification = useCallback((type, title, msg) => {
+                const newNotif = {
+                    id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    type,
+                    title,
+                    msg,
+                    time: new Date().toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB') + (lang === 'th' ? ' น.' : ''),
+                    read: false
+                };
+                setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+                setToasts(prev => [{ ...newNotif, toastId: `${newNotif.id}` }, ...prev].slice(0, 3));
+                if (soundEnabled && typeof window !== 'undefined') {
+                    try { const AudioCtx = window.AudioContext || window.webkitAudioContext; if (AudioCtx) { const ctx = new AudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = type === 'ERROR' ? 440 : type === 'WARNING' ? 660 : 880; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18); if (ctx.state === 'suspended') ctx.resume(); osc.start(); osc.stop(ctx.currentTime + 0.18); osc.onended = () => ctx.close(); } } catch (_) {}
+                }
+            }, [soundEnabled, lang]);
+
+            useEffect(() => {
+                if (!toasts.length) return;
+                const timers = toasts.map(toast => setTimeout(() => {
+                    setToasts(prev => prev.filter(item => item.toastId !== toast.toastId));
+                }, 5200));
+                return () => timers.forEach(clearTimeout);
+            }, [toasts]);
+
+            /* Fetch closed futures candles + independent 24h futures ticker. */
+            const loadPrimaryMarketData = useCallback(async (selectedTf) => {
+                if (requestInFlight.current) return;
+                requestInFlight.current = true;
+                if (!candlesRef.current.length) setDataStatus('loading');
+                try {
+                    const [fetchedCandles, liveTicker] = await Promise.all([
+                        fetchBinanceKlines('BTCUSDT', selectedTf, 250),
+                        fetchBinance24hTicker('BTCUSDT')
+                    ]);
+                    candlesRef.current = fetchedCandles;
+                    setCandles(fetchedCandles);
+                    setTicker(liveTicker);
+                    const now = new Date();
+                    setLastUpdateUTC(now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+                    setLastUpdateTH(now.toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB') + (lang === 'th' ? ' น.' : ' local'));
+                    setLastSuccessfulAt(Date.now());
+                    setDataStatus('connected');
+                    setErrorMessage(null);
+                    if (lastConnectionState.current === 'error') addNotification('INFO', tx('เชื่อมต่อข้อมูลสำเร็จ', 'DATA CONNECTION RESTORED'), tx('กลับมารับข้อมูล Futures จาก Binance ได้แล้ว', 'Binance Futures data feed is back online.'));
+                    lastConnectionState.current = 'connected';
+                } catch (err) {
+                    setDataStatus(candlesRef.current.length ? 'stale' : 'error');
+                    setErrorMessage(err.message || 'Binance API error');
+                    const now = Date.now();
+                    if (lastConnectionState.current !== 'error' || now - (lastAlertAt.current.connection || 0) > 60000) {
+                        addNotification('ERROR', tx('เชื่อมต่อข้อมูลล้มเหลว', 'DATA CONNECTION FAILED'), err.message || 'Binance endpoint unreachable');
+                        lastAlertAt.current.connection = now;
+                    }
+                    lastConnectionState.current = 'error';
+                } finally { requestInFlight.current = false; }
+            }, [addNotification, lang]);
+
+            /* Multi-Timeframe Batch Fetcher */
+            const loadMTFMatrixData = useCallback(async (tfList) => {
+                const results = {};
+                for (const tf of tfList) {
+                    try {
+                        const data = await fetchBinanceKlines('BTCUSDT', tf, 250);
+                        if (data && data.length >= 200) {
+                            const last = data[data.length - 1];
+                            const ema20 = Indicators.calcEMA(data, 20).slice(-1)[0];
+                            const ema50 = Indicators.calcEMA(data, 50).slice(-1)[0];
+                            const ema200 = Indicators.calcEMA(data, 200).slice(-1)[0];
+                            const rsi = Indicators.calcRSI(data, 14).slice(-1)[0];
+                            const macd = Indicators.calcMACD(data).histogram.slice(-1)[0];
+                            const donchian = Indicators.calcDonchian(data, 20);
+
+                            let trend = 'Sideways';
+                            if (Number.isFinite(ema20) && Number.isFinite(ema50)) {
+                                if (last.close > ema20 && ema20 > ema50) trend = 'Bullish';
+                                else if (last.close < ema20 && ema20 < ema50) trend = 'Bearish';
+                            }
+
+                            let emaAlign = 'Mixed';
+                            if ([ema20, ema50, ema200].every(Number.isFinite)) {
+                                if (ema20 > ema50 && ema50 > ema200) emaAlign = 'Bullish Stack';
+                                else if (ema20 < ema50 && ema50 < ema200) emaAlign = 'Bearish Stack';
+                            }
+
+                            results[tf] = {
+                                tf,
+                                close: last.close,
+                                trend,
+                                emaAlign,
+                                rsi: Number.isFinite(rsi) ? rsi.toFixed(1) : 'N/A',
+                                macdHist: Number.isFinite(macd) ? (macd >= 0 ? 'Positive' : 'Negative') : 'N/A',
+                                donUpper: donchian.upper.slice(-1)[0],
+                                donLower: donchian.lower.slice(-1)[0],
+                                status: 'CONFIRMED'
+                            };
+                        } else {
+                            results[tf] = { tf, status: 'INSUFFICIENT DATA' };
+                        }
+                    } catch (e) {
+                        results[tf] = { tf, status: 'ERROR' };
+                    }
+                }
+                setMtfData(prev => ({ ...prev, ...results }));
+            }, []);
+
+            useEffect(() => {
+                loadPrimaryMarketData(timeframe);
+                const interval = setInterval(() => loadPrimaryMarketData(timeframe), 15000);
+                return () => clearInterval(interval);
+            }, [timeframe, loadPrimaryMarketData]);
+
+            useEffect(() => {
+                if (activeTab === 'mtf') {
+                    loadMTFMatrixData(mtfSelectedPair);
+                }
+            }, [activeTab, mtfSelectedPair, loadMTFMatrixData]);
+
+            /* Calculation & Technical Analysis Engine */
+            const analysis = useMemo(() => {
+                if (!candles || candles.length < 200) return null;
+                const last = candles[candles.length - 1];
+                const ema20 = Indicators.calcEMA(candles, 20).slice(-1)[0];
+                const ema50 = Indicators.calcEMA(candles, 50).slice(-1)[0];
+                const ema200 = Indicators.calcEMA(candles, 200).slice(-1)[0];
+                const rsi = Indicators.calcRSI(candles, 14).slice(-1)[0];
+                const donchian = Indicators.calcDonchian(candles, 20);
+
+                const donUpper = donchian.upper.slice(-1)[0];
+                const donLower = donchian.lower.slice(-1)[0];
+
+                let signal = 'WAIT';
+                if ([ema20, ema50, ema200, rsi].every(Number.isFinite)) {
+                    if (last.close > ema20 && ema20 > ema50 && ema50 > ema200 && rsi > 50) signal = 'LONG';
+                    else if (last.close < ema20 && ema20 < ema50 && ema50 < ema200 && rsi < 50) signal = 'SHORT';
+                }
+
+                const high = Math.max(...candles.map(c => c.high));
+                const low = Math.min(...candles.map(c => c.low));
+                const pivotP = (high + low + last.close) / 3;
+                const r1 = (2 * pivotP) - low;
+                const s1 = (2 * pivotP) - high;
+                const r2 = pivotP + (high - low);
+                const s2 = pivotP - (high - low);
+
+                const entry = last.close;
+                const sl = signal === 'LONG' ? Math.min(s1, entry * 0.995) : signal === 'SHORT' ? Math.max(r1, entry * 1.005) : entry * 0.99;
+                const tp = signal === 'LONG' ? Math.max(r1, entry * 1.005) : signal === 'SHORT' ? Math.min(s1, entry * 0.995) : entry * 1.01;
+
+                const priceRiskPerBTC = Math.abs(entry - sl);
+                const riskAmountUSD = portfolioCapital * (riskPercent / 100);
+
+                const riskSizedBTC = priceRiskPerBTC > 0 ? (riskAmountUSD / priceRiskPerBTC) : 0;
+                const marginAndFeeRate = (1 / Math.max(1, leverage)) + (Math.max(0, takerFeeRate) / 100 * 2);
+                const capitalAfterReserve = Math.max(0, portfolioCapital - (riskAmountUSD * 0.2));
+                const maxNotionalByCapital = marginAndFeeRate > 0 ? capitalAfterReserve / marginAndFeeRate : 0;
+                const btcPositionSize = entry > 0 ? Math.min(riskSizedBTC, maxNotionalByCapital / entry) : 0;
+                const positionNotional = btcPositionSize * entry;
+                const initialMargin = leverage > 0 ? positionNotional / leverage : positionNotional;
+                let roundTripFees = positionNotional * (takerFeeRate / 100) * 2;
+                let recommendedReserve = initialMargin + roundTripFees + (riskAmountUSD * 0.2);
+
+                const isStandardTF = ['15m', '1h', '4h'].includes(timeframe);
+
+                return {
+                    signal,
+                    lastPrice: last.close,
+                    ema20,
+                    ema50,
+                    ema200,
+                    rsi,
+                    donUpper,
+                    donLower,
+                    isStandardTF,
+                    pivots: { p: pivotP, r1, r2, s1, s2 },
+                    strat2: {
+                        entry,
+                        sl,
+                        tp,
+                        btcPositionSize,
+                        positionNotional,
+                        initialMargin,
+                        roundTripFees,
+                        recommendedReserve,
+                        riskAmountUSD
+                    }
+                };
+            }, [candles, leverage, portfolioCapital, riskPercent, takerFeeRate, timeframe]);
+
+            useEffect(() => {
+                if (!analysis) return;
+                if (lastSignalState.current === null) { lastSignalState.current = analysis.signal; return; }
+                if (lastSignalState.current !== analysis.signal) {
+                    const labels = { LONG: tx('สัญญาณ LONG ใหม่', 'NEW LONG SIGNAL'), SHORT: tx('สัญญาณ SHORT ใหม่', 'NEW SHORT SIGNAL'), WAIT: tx('เปลี่ยนเป็น WAIT', 'SIGNAL CHANGED TO WAIT') };
+                    addNotification(analysis.signal === 'WAIT' ? 'WARNING' : 'SIGNAL', labels[analysis.signal] || tx('สัญญาณเปลี่ยน', 'SIGNAL CHANGED'), tx(`สัญญาณจาก ${lastSignalState.current} เปลี่ยนเป็น ${analysis.signal} จากแท่งเทียนที่ปิดแล้ว โปรดตรวจสอบก่อนตัดสินใจ`, `Signal changed from ${lastSignalState.current} to ${analysis.signal} using closed candles. Verify independently before acting.`));
+                    lastSignalState.current = analysis.signal;
+                }
+            }, [analysis && analysis.signal, addNotification, lang]);
+
+            useEffect(() => {
+                const now = Date.now();
+                if (leverage >= 50 && now - (lastAlertAt.current.leverage || 0) > 30000) {
+                    addNotification('WARNING', tx('เลเวอเรจเสี่ยงสูงมาก', 'EXTREME LEVERAGE RISK'), tx(`เลือกเลเวอเรจ ${leverage}x ความเสี่ยงถูกล้างพอร์ตเพิ่มขึ้นมาก การตั้ง Stop Loss ไม่รับประกันว่าจะป้องกันการล้างพอร์ตได้`, `Leverage ${leverage}x carries extreme liquidation risk. Stop-loss orders cannot guarantee protection from liquidation.`));
+                    lastAlertAt.current.leverage = now;
+                }
+            }, [leverage, addNotification, lang]);
+
+            const unreadCount = notifications.filter(n => !n.read).length;
+
+            return (
+                <div lang={lang} className={`min-h-screen glow-${glowLevel} ${theme === 'dark' ? 'bg-[#04060A] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+                    <div aria-live="polite" aria-atomic="false" className="fixed right-3 top-20 z-[100] w-[min(92vw,380px)] space-y-2">
+                        {toasts.map(toast => (
+                            <div key={toast.toastId} className={`hud-toast hud-panel rounded-xl p-3 border shadow-2xl ${toast.type === 'ERROR' ? 'border-cyber-red/60 bg-[#160912]/95' : toast.type === 'WARNING' ? 'border-cyber-yellow/60 bg-[#171307]/95' : toast.type === 'SIGNAL' ? 'border-cyber-green/60 bg-[#061711]/95' : 'border-cyber-cyan/50 bg-[#07121b]/95'}`}>
+                                <div className="flex items-start gap-2.5">
+                                    <span className={`mt-0.5 ${toast.type === 'ERROR' ? 'text-cyber-red' : toast.type === 'WARNING' ? 'text-cyber-yellow' : toast.type === 'SIGNAL' ? 'text-cyber-green' : 'text-cyber-cyan'}`}>
+                                        {toast.type === 'ERROR' ? <Icons.AlertTriangle className="w-4 h-4" /> : toast.type === 'SIGNAL' ? <Icons.Target className="w-4 h-4" /> : <Icons.Bell className="w-4 h-4" />}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[11px] font-mono font-bold tracking-wide text-slate-100">{toast.title}</div>
+                                        <div className="mt-1 text-xs text-slate-300 break-words">{toast.msg}</div>
+                                        <div className="mt-1 text-[9px] font-mono text-slate-500">{toast.time}</div>
+                                    </div>
+                                    <button type="button" aria-label="Dismiss notification" onClick={() => setToasts(prev => prev.filter(item => item.toastId !== toast.toastId))} className="text-slate-500 hover:text-white px-1">×</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <header className="border-b border-cyber-border bg-cyber-panel/90 backdrop-blur-md sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-cyber-cyan/10 rounded-lg border border-cyber-cyan/40 text-cyber-cyan neon-cyan">
+                                    <Icons.Brain className="w-6 h-6 animate-pulse" />
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-extrabold tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-green to-cyber-magenta">
+                                        {t.title}
+                                    </h1>
+                                    <p className="text-[10px] text-slate-400 font-mono tracking-widest uppercase">{t.subtitle}</p>
+                                </div>
+                            </div>
+
+                            {/* Live Status Lights & Controls */}
+                            <div className="flex items-center flex-wrap gap-3">
+                                {/* Execution Disabled Status Badge */}
+                                <div className="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/30 text-[10px] font-mono text-rose-400 flex items-center gap-1.5" data-tooltip="Execution API Disabled Safety Guard">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    EXECUTION: DISABLED
+                                </div>
+
+                                {/* Glow Level Selector */}
+                                <div className="flex items-center space-x-1 bg-cyber-bg p-1 rounded-lg border border-cyber-border">
+                                    <span className="text-[10px] font-mono text-slate-400 px-1.5 hidden sm:inline">GLOW:</span>
+                                    {['off', 'low', 'medium', 'high'].map(g => (
+                                        <button
+                                            key={g}
+                                            onClick={() => setGlowLevel(g)}
+                                            className={`px-2 py-0.5 text-[10px] font-mono rounded uppercase transition ${glowLevel === g ? 'bg-cyber-cyan text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Theme Switch */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                    className="px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-cyber-border bg-cyber-panel hover:border-cyber-cyan transition text-cyber-cyan"
+                                    data-tooltip="Toggle dark / light theme"
+                                    aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                                >
+                                    {theme === 'dark' ? 'LIGHT MODE' : 'DARK MODE'}
+                                </button>
+
+                                {/* Language Switch */}
+                                <button
+                                    type="button" aria-label={lang === 'th' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'}
+                                    onClick={() => setLang(lang === 'th' ? 'en' : 'th')}
+                                    className="px-2.5 py-1 text-xs font-mono rounded-lg border border-cyber-border bg-cyber-panel hover:border-cyber-cyan transition text-cyber-cyan flex items-center gap-1.5"
+                                >
+                                    <Icons.Languages className="w-3.5 h-3.5" />
+                                    {lang.toUpperCase()}
+                                </button>
+
+                                {/* Notification Bell Drawer Toggle */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsNotifOpen(!isNotifOpen)}
+                                        className="p-2 rounded-lg border border-cyber-border bg-cyber-panel hover:border-cyber-cyan transition text-slate-300 relative"
+                                        data-tooltip="Notification HUD Drawer"
+                                    >
+                                        <Icons.Bell className="w-4 h-4 text-cyber-cyan" />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute -top-1 -right-1 bg-cyber-red text-white text-[9px] font-bold font-mono px-1.5 py-0.2 rounded-full animate-pulse">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* Notifications Drawer */}
+                                    {isNotifOpen && (
+                                        <div className="absolute right-0 mt-2 w-80 sm:w-96 hud-panel rounded-xl shadow-2xl p-4 z-50 border border-cyber-cyan/40 space-y-3 font-mono">
+                                            <div className="flex justify-between items-center border-b border-cyber-border pb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Icons.Bell className="w-4 h-4 text-cyber-cyan" />
+                                                    <span className="text-xs font-bold text-cyber-cyan">{tx('การแจ้งเตือนสำคัญ', 'HUD NOTIFICATIONS')}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setSoundEnabled(!soundEnabled)}
+                                                        className="text-slate-400 hover:text-cyber-cyan"
+                                                        data-tooltip={soundEnabled ? tx("ปิดเสียงแจ้งเตือน", "Mute alerts") : tx("เปิดเสียงแจ้งเตือน", "Enable alert sounds")}
+                                                    >
+                                                        {soundEnabled ? <Icons.Volume2 className="w-3.5 h-3.5" /> : <Icons.VolumeX className="w-3.5 h-3.5" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                                                        className="text-[10px] text-slate-400 hover:text-cyber-cyan"
+                                                        title="Mark all notifications as read"
+                                                    >
+                                                        {tx('อ่านทั้งหมด', 'MARK READ')}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setNotifications([])}
+                                                        className="text-[10px] text-slate-400 hover:text-cyber-red"
+                                                        title="Clear notification history"
+                                                    >
+                                                        {tx('ล้างทั้งหมด', 'CLEAR ALL')}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                                                {notifications.length === 0 ? (
+                                                    <div className="text-center text-xs text-slate-500 py-4">{tx('ยังไม่มีการแจ้งเตือน', 'No alerts in log')}</div>
+                                                ) : (
+                                                    notifications.map(n => (
+                                                        <div key={n.id} className={`p-2.5 rounded border text-xs ${!n.read ? 'ring-1 ring-cyber-cyan/15 ' : ''}${n.type === 'ERROR' ? 'border-cyber-red/40 bg-cyber-red/10 text-rose-300' : n.type === 'WARNING' ? 'border-cyber-yellow/40 bg-cyber-yellow/10 text-amber-200' : n.type === 'SIGNAL' ? 'border-cyber-green/40 bg-cyber-green/10 text-emerald-300' : 'border-cyber-border bg-cyber-bg text-slate-300'}`}>
+                                                            <div className="flex justify-between items-center gap-2 font-bold">
+                                                                <span className="min-w-0 break-words">[{n.type}] {n.title}</span>
+                                                                <span className="text-[9px] text-slate-500 whitespace-nowrap">{n.time}</span>
+                                                            </div>
+                                                            <div className="text-[11px] mt-1 text-slate-400 break-words">{n.msg}</div>
+                                                            {!n.read && <button onClick={() => setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item))} className="mt-2 text-[9px] text-cyber-cyan hover:text-white">{tx('ทำเครื่องหมายว่าอ่านแล้ว', 'MARK AS READ')}</button>}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+                        {/* Live Ticker HUD Card Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="hud-panel rounded-xl p-4 relative overflow-hidden">
+                                <div className="hud-corner-tl" />
+                                <div className="hud-corner-br" />
+                                <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                                    <span>{t.price}</span>
+                                    <Icons.Chart className="w-3.5 h-3.5 text-cyber-cyan" />
+                                </div>
+                                <div className="text-2xl font-mono font-bold text-cyber-cyan neon-cyan mt-1">
+                                    ${ticker.price ? ticker.price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '---'}
+                                </div>
+                                <div className="text-[10px] font-mono text-slate-500 mt-1">BTCUSDT Binance USDⓈ-M</div>
+                            </div>
+
+                            <div className="hud-panel rounded-xl p-4 relative overflow-hidden">
+                                <div className="hud-corner-tl" />
+                                <div className="hud-corner-br" />
+                                <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                                    <span>{t.change24h}</span>
+                                    <Icons.Gauge className="w-3.5 h-3.5 text-cyber-yellow" />
+                                </div>
+                                <div className={`text-2xl font-mono font-bold mt-1 ${ticker.change >= 0 ? 'text-cyber-green neon-green' : 'text-cyber-red neon-red'}`}>
+                                    {ticker.change ? `${ticker.change >= 0 ? '+' : ''}${ticker.change}%` : '---'}
+                                </div>
+                                <div className="text-[10px] font-mono text-slate-500 mt-1">24h Price Action</div>
+                            </div>
+
+                            <div className="hud-panel rounded-xl p-4 relative overflow-hidden">
+                                <div className="hud-corner-tl" />
+                                <div className="hud-corner-br" />
+                                <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                                    <span>ACTIVE TIMEFRAME</span>
+                                    <Icons.Clock className="w-3.5 h-3.5 text-cyber-magenta" />
+                                </div>
+                                <div className="text-2xl font-mono font-bold text-cyber-yellow neon-yellow mt-1">
+                                    {timeframe.toUpperCase()}
+                                </div>
+                                <div className="text-[10px] font-mono text-slate-500 mt-1">Technical Interval</div>
+                            </div>
+
+                            <div className="hud-panel rounded-xl p-4 relative overflow-hidden">
+                                <div className="hud-corner-tl" />
+                                <div className="hud-corner-br" />
+                                <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                                    <span>{t.dataStatus}</span>
+                                    <Icons.RadioTower className="w-3.5 h-3.5 text-cyber-green" />
+                                </div>
+                                <div className="text-sm font-mono mt-2 flex items-center justify-between">
+                                    {(dataStatus === 'connected' || dataStatus === 'stale') && (
+                                        <span className={`${dataStatus === 'connected' ? 'text-cyber-green' : 'text-cyber-yellow'} font-bold flex items-center gap-2`}>
+                                            <span className={`status-led ${dataStatus === 'connected' ? 'status-led-live' : 'status-led-wait'}`}></span>
+                                            {dataStatus === 'stale' ? tx('ข้อมูลค้าง — กำลังลองเชื่อมต่อใหม่', 'STALE DATA — RETRYING') : t.statusConnected}
+                                        </span>
+                                    )}
+                                    {dataStatus === 'loading' && (
+                                        <span className="text-cyber-yellow font-bold flex items-center gap-2">
+                                            <span className="status-led status-led-wait"></span>
+                                            {t.statusLoading}
+                                        </span>
+                                    )}
+                                    {dataStatus === 'error' && (
+                                        <span className="text-cyber-red font-bold flex items-center gap-1.5 neon-red">
+                                            <span className="status-led status-led-error"></span>
+                                            {t.statusError}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono mt-1">
+                                    {lastUpdateUTC || 'UTC Sync Standard'}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Error Handling Banner */}
+                        {(dataStatus === 'error' || dataStatus === 'stale') && (
+                            <div className={`p-4 rounded-xl border flex items-center justify-between ${dataStatus === 'error' ? 'bg-cyber-red/10 border-cyber-red/50' : 'bg-cyber-yellow/10 border-cyber-yellow/50'}`}>
+                                <div className="text-xs text-rose-300 font-mono flex items-center gap-2">
+                                    <Icons.AlertTriangle className="w-4 h-4 text-cyber-red" />
+                                    <span>{dataStatus === 'error' ? tx('ระบบข้อมูลผิดพลาด:', 'SYSTEM FEED ERROR:') : tx('คำเตือนข้อมูลเก่า:', 'STALE DATA WARNING:')} {errorMessage || tx('กำลังพยายามเชื่อมต่อ Binance REST อีกครั้ง', 'Retrying Binance REST connection')}</span>
+                                </div>
+                                <button
+                                    onClick={() => loadPrimaryMarketData(timeframe)}
+                                    className={`px-4 py-1.5 text-xs font-mono font-bold ${dataStatus === 'error' ? 'bg-cyber-red hover:bg-rose-600' : 'bg-cyber-yellow hover:bg-amber-500'} text-black rounded-lg transition`}
+                                >
+                                    {t.retryBtn}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Cyber Navigation Tabs */}
+                        <div className="flex border-b border-cyber-border space-x-2 overflow-x-auto pb-1">
+                            {[
+                                { id: 'dashboard', label: t.tabDashboard, icon: Icons.Dashboard },
+                                { id: 'mtf', label: t.tabMTF, icon: Icons.Brain },
+                                { id: 'risk', label: t.tabRiskCalc, icon: Icons.Gauge },
+                                { id: 'layers', label: t.tabLayers, icon: Icons.Layers },
+                            ].map(tab => {
+                                const IconComp = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`px-4 py-2 font-mono text-xs font-bold rounded-t-lg transition flex items-center gap-2 whitespace-nowrap ${isActive ? 'bg-cyber-panel border-t-2 border-x border-cyber-cyan text-cyber-cyan neon-cyan' : 'text-slate-400 hover:text-slate-200 border-t-2 border-transparent'}`}
+                                    >
+                                        <IconComp className="w-3.5 h-3.5" />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {activeTab === 'dashboard' && (
+                            <div className="space-y-6">
+                                {/* Timeframe Selection Toolbar */}
+                                <div className="hud-panel rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Icons.Clock className="w-4 h-4 text-cyber-cyan" />
+                                        <span className="text-xs font-mono text-slate-400 font-semibold uppercase">
+                                            {tx('เลือกกรอบเวลา:', 'INTERVAL SELECTOR:')}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 flex-1 max-w-full">
+                                        {SUPPORTED_TIMEFRAMES.map(tf => (
+                                            <button
+                                                key={tf.id}
+                                                onClick={() => setTimeframe(tf.id)}
+                                                className={`px-2.5 py-1 text-xs font-mono rounded-md transition font-semibold ${timeframe === tf.id ? 'bg-cyber-cyan text-black shadow-lg shadow-cyber-cyan/30 font-bold' : 'bg-cyber-bg hover:bg-slate-800 text-slate-300 border border-cyber-border'}`}
+                                            >
+                                                {tf.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {analysis && !analysis.isStandardTF && (
+                                    <div className="p-3 bg-cyber-yellow/10 border border-cyber-yellow/30 rounded-xl text-xs font-mono text-cyber-yellow flex items-center gap-2">
+                                        <Icons.AlertTriangle className="w-4 h-4" />
+                                        {t.customTFNote}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                    <div className="lg:col-span-3 space-y-6">
+                                        <div className="hud-panel rounded-2xl p-4 relative">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Icons.Chart className="w-4 h-4 text-cyber-cyan" />
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-100">{tx('กราฟ BTCUSDT Futures', 'BTCUSDT Futures Chart')}</div>
+                                                        <div className="text-[10px] font-mono text-slate-500">BINANCE:BTCUSDT.P · USDⓈ-M Perpetual</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2" role="group" aria-label={tx('เลือกแหล่งกราฟ', 'Choose chart source')}>
+                                                    <button type="button" onClick={() => setChartProvider('tradingview')} aria-pressed={chartProvider === 'tradingview'} className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${chartProvider === 'tradingview' ? 'bg-cyber-cyan/15 text-cyber-cyan border-cyber-cyan/60' : 'bg-slate-900/50 text-slate-400 border-cyber-border hover:text-slate-200'}`}>TradingView</button>
+                                                    <button type="button" onClick={() => setChartProvider('analysis')} aria-pressed={chartProvider === 'analysis'} className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${chartProvider === 'analysis' ? 'bg-cyber-cyan/15 text-cyber-cyan border-cyber-cyan/60' : 'bg-slate-900/50 text-slate-400 border-cyber-border hover:text-slate-200'}`}>{tx('กราฟวิเคราะห์ภายใน', 'Internal Analysis Chart')}</button>
+                                                </div>
+                                            </div>
+                                            {chartProvider === 'tradingview' ? (
+                                                <div className="h-[480px] w-full overflow-hidden rounded-xl border border-cyber-border/70">
+                                                    <TradingViewWidget key={`${timeframe}-${theme}-${lang}`} timeframe={timeframe} theme={theme} lang={lang} />
+                                                </div>
+                                            ) : (
+                                                <div className="h-[480px] relative">
+                                                    <TradingChart candles={candles} theme={theme} layerSettings={layerSettings} glowLevel={glowLevel} analysis={analysis} />
+                                                </div>
+                                            )}
+                                            <div className="mt-3 flex flex-col gap-1 text-[10px] text-slate-500">
+                                                <span>{tx('กรอบเวลา TradingView จะเปลี่ยนตามตัวเลือกด้านบนเมื่อรองรับ', 'TradingView interval follows the selector above where supported.')}</span>
+                                                <span>{tx('หมายเหตุ: กราฟ TradingView และอินดิเคเตอร์ AI ใช้ฟีดแยกกัน (TradingView กับ Binance REST) แม้เป็นสัญญาเดียวกัน ราคา/เวลาอาจต่างกันเล็กน้อย จึงไม่ถือว่าซิงก์แบบ tick-to-tick', 'Note: TradingView chart and AI indicators use separate feeds (TradingView vs Binance REST). They target the same contract but price/timestamps may differ slightly; they are not tick-by-tick synchronized.')}</span>
+                                                <a className="text-cyber-cyan hover:underline pointer-events-auto" href="https://www.tradingview.com/symbols/BTCUSDT.P/?exchange=BINANCE" target="_blank" rel="noopener noreferrer">{tx('เปิดกราฟ Binance Futures บน TradingView', 'Open Binance Futures chart on TradingView')}</a>
+                                            </div>
+                                        </div>
+
+                                        {/* Technical Sub Panel Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <SubPanelChart title={t.rsiTitle} type="RSI" candles={candles} theme={theme} glowLevel={glowLevel} />
+                                            <SubPanelChart title={t.macdTitle} type="MACD" candles={candles} theme={theme} glowLevel={glowLevel} />
+                                            <SubPanelChart title={t.volTitle} type="VOLUME" candles={candles} theme={theme} glowLevel={glowLevel} />
+                                            <SubPanelChart title={t.atrTitle} type="ATR" candles={candles} theme={theme} glowLevel={glowLevel} />
+                                        </div>
+                                    </div>
+
+                                    {/* AI Trading Signal Side Panel */}
+                                    <div className="hud-panel rounded-2xl p-5 space-y-4 relative">
+                                        <div className="hud-corner-tl" />
+                                        <div className="hud-corner-br" />
+                                        <div className="flex justify-between items-center border-b border-cyber-border pb-3">
+                                            <div className="flex items-center gap-2">
+                                                <Icons.Brain className="w-4 h-4 text-cyber-cyan" />
+                                                <h2 className="text-sm font-bold font-mono text-slate-200">{tx('ระบบสัญญาณวิเคราะห์', 'AI SIGNAL ENGINE')}</h2>
+                                            </div>
+                                            <span className="text-[10px] font-mono px-2 py-0.5 bg-cyber-cyan/20 text-cyber-cyan rounded border border-cyber-cyan/40">
+                                                LEV {leverage}x
+                                            </span>
+                                        </div>
+
+                                        {analysis ? (
+                                            <div className="space-y-4">
+                                                <div className={`p-3 rounded-xl font-bold font-mono text-center text-lg tracking-wider border ${analysis.signal === 'LONG' ? 'bg-cyber-green/10 text-cyber-green border-cyber-green/40 neon-green' : analysis.signal === 'SHORT' ? 'bg-cyber-red/10 text-cyber-red border-cyber-red/40 neon-red' : 'bg-cyber-yellow/10 text-cyber-yellow border-cyber-yellow/40'}`}>
+                                                    {tx('สัญญาณ:', 'SIGNAL:')} {analysis.signal === 'LONG' ? tx('LONG / ซื้อ', 'LONG') : analysis.signal === 'SHORT' ? tx('SHORT / ขาย', 'SHORT') : tx('รอจังหวะ', 'WAIT')}
+                                                </div>
+                                                <div className="space-y-2 text-xs font-mono">
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('ราคาเข้าอ้างอิง', 'ENTRY PRICE')}</span>
+                                                        <span className="text-cyber-cyan font-bold">${analysis.strat2.entry.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('จุดตัดขาดทุน (SL)', 'STOP LOSS')}</span>
+                                                        <span className="text-cyber-red font-bold">${analysis.strat2.sl.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('จุดทำกำไร (TP)', 'TAKE PROFIT')}</span>
+                                                        <span className="text-cyber-green font-bold">${analysis.strat2.tp.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('ขนาดสถานะโดยประมาณ', 'POSITION SIZE')}</span>
+                                                        <span className="text-cyber-yellow font-bold">{analysis.strat2.btcPositionSize.toFixed(4)} BTC</span>
+                                                    </div>
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('มาร์จินเริ่มต้นโดยประมาณ', 'INITIAL MARGIN')}</span>
+                                                        <span>${analysis.strat2.initialMargin.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between py-1.5 border-b border-cyber-border">
+                                                        <span className="text-slate-400">{tx('ค่าธรรมเนียมโดยประมาณ', 'EST. FEES')}</span>
+                                                        <span className="text-slate-400">${analysis.strat2.roundTripFees.toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-slate-400 font-mono py-8 text-center flex items-center justify-center gap-2">
+                                                <Icons.Loader className="w-4 h-4 text-cyber-cyan" />
+                                                Computing Quantitative Signal...
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'mtf' && (
+                            <div className="hud-panel rounded-2xl p-6 space-y-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-cyber-border pb-4">
+                                    <div>
+                                        <h2 className="text-lg font-bold font-mono text-cyber-cyan flex items-center gap-2">
+                                            <Icons.Brain className="w-5 h-5" />
+                                            MULTI-TIMEFRAME STRUCTURE MATRIX
+                                        </h2>
+                                        <p className="text-xs text-slate-400 font-mono mt-1">
+                                            Evaluate macro trend alignment to eliminate counter-trend risk execution.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {MTF_PRESETS.map((preset, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    setMtfSelectedPair(preset.tfs);
+                                                    loadMTFMatrixData(preset.tfs);
+                                                }}
+                                                className="px-3 py-1 text-xs font-mono bg-cyber-bg hover:bg-slate-800 text-cyber-cyan rounded-lg border border-cyber-border"
+                                            >
+                                                {preset.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {mtfSelectedPair.map(tfKey => {
+                                        const data = mtfData[tfKey];
+                                        return (
+                                            <div key={tfKey} className="p-5 border border-cyber-border rounded-xl bg-cyber-bg/60 space-y-4 relative">
+                                                <div className="hud-corner-tl" />
+                                                <div className="hud-corner-br" />
+                                                <div className="flex justify-between items-center border-b border-cyber-border pb-3">
+                                                    <span className="text-base font-bold font-mono text-cyber-cyan">
+                                                        TIMEFRAME: {tfKey.toUpperCase()}
+                                                    </span>
+                                                    <span className={`px-2.5 py-1 text-xs font-mono rounded font-bold ${data && data.status === 'CONFIRMED' ? 'bg-cyber-green/20 text-cyber-green border border-cyber-green/40' : 'bg-cyber-yellow/20 text-cyber-yellow border border-cyber-yellow/40'}`}>
+                                                        {data ? data.status : 'SYNCING...'}
+                                                    </span>
+                                                </div>
+
+                                                {data && data.status === 'CONFIRMED' ? (
+                                                    <div className="space-y-3 text-sm font-mono">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">Market Trend:</span>
+                                                            <span className={data.trend === 'Bullish' ? 'text-cyber-green font-bold' : data.trend === 'Bearish' ? 'text-cyber-red font-bold' : 'text-cyber-yellow'}>
+                                                                {data.trend.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">EMA Alignment:</span>
+                                                            <span>{data.emaAlign}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">RSI (14):</span>
+                                                            <span className="text-cyber-cyan">{data.rsi}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-slate-400">MACD Histogram:</span>
+                                                            <span className={data.macdHist === 'Positive' ? 'text-cyber-green' : 'text-cyber-red'}>
+                                                                {data.macdHist}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs font-mono text-slate-500 py-4 flex items-center gap-2">
+                                                        <Icons.Loader className="w-4 h-4 text-cyber-cyan" />
+                                                        Evaluating Timeframe Metrics...
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Matrix Consensus HUD */}
+                                {mtfData[mtfSelectedPair[0]] && mtfData[mtfSelectedPair[1]] && (
+                                    <div className="p-4 rounded-xl border border-cyber-border bg-cyber-bg/80 font-mono text-xs space-y-2">
+                                        <div className="font-bold text-slate-200">MTF STRUCTURAL EVALUATION:</div>
+                                        {mtfData[mtfSelectedPair[0]].trend === mtfData[mtfSelectedPair[1]].trend ? (
+                                            <div className="text-cyber-green font-semibold flex items-center gap-2">
+                                                <Icons.CheckCircle className="w-4 h-4" />
+                                                ALIGNED TREND ({mtfData[mtfSelectedPair[0]].trend.toUpperCase()}): Higher timeframe ({mtfSelectedPair[0].toUpperCase()}) and lower timeframe ({mtfSelectedPair[1].toUpperCase()}) are synchronized.
+                                            </div>
+                                        ) : (
+                                            <div className="text-cyber-red font-semibold flex items-center gap-2">
+                                                <Icons.AlertTriangle className="w-4 h-4" />
+                                                CONFLICTING TRENDS: {mtfSelectedPair[0].toUpperCase()} ({mtfData[mtfSelectedPair[0]].trend}) opposes {mtfSelectedPair[1].toUpperCase()} ({mtfData[mtfSelectedPair[1]].trend}). High risk of whipsaw.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'risk' && (
+                            <div className="hud-panel rounded-2xl p-6 space-y-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-cyber-border pb-4">
+                                    <div>
+                                        <h2 className="text-lg font-bold font-mono text-cyber-cyan flex items-center gap-2">
+                                            <Icons.Gauge className="w-5 h-5" />
+                                            FUTURES RISK & LEVERAGE ENGINE
+                                        </h2>
+                                        <p className="text-xs text-slate-400 font-mono mt-1">{t.limitNotVerified}</p>
+                                    </div>
+
+                                    <div className="flex items-center space-x-3">
+                                        <span className="text-xs font-mono text-slate-400">LEVERAGE:</span>
+                                        <select
+                                            value={leverage}
+                                            onChange={e => setLeverage(Number(e.target.value))}
+                                            className="bg-cyber-bg border border-cyber-border rounded-lg px-3 py-1.5 font-mono text-cyber-cyan text-sm focus:outline-none focus:border-cyber-cyan"
+                                        >
+                                            {[1, 2, 3, 5, 10, 20, 25, 50, 75, 100, 125].map(v => (
+                                                <option key={v} value={v}>{v}x</option>
+                                            ))}
+                                        </select>
+                                        <span className="text-xl font-bold font-mono text-cyber-cyan">{leverage}x</span>
+                                    </div>
+                                </div>
+
+                                {/* Slider */}
+                                <div className="space-y-3">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="125"
+                                        value={leverage}
+                                        onChange={e => setLeverage(Number(e.target.value))}
+                                        className="w-full h-2 bg-cyber-bg rounded-lg appearance-none cursor-pointer accent-cyber-cyan"
+                                    />
+                                    <div className="flex flex-wrap gap-2">
+                                        {[1, 2, 3, 5, 10, 20, 25, 50, 75, 100, 125].map(v => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setLeverage(v)}
+                                                className={`px-3 py-1 rounded text-xs font-mono font-semibold transition ${leverage === v ? 'bg-cyber-cyan text-black font-bold' : 'bg-cyber-bg hover:bg-slate-800 text-slate-300 border border-cyber-border'}`}
+                                            >
+                                                {v}x
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {leverage >= 50 ? (
+                                    <div className="p-4 rounded-xl bg-cyber-red/10 border border-cyber-red/50 text-rose-300 text-xs font-mono flex items-start gap-3">
+                                        <Icons.ShieldAlert className="w-5 h-5 text-cyber-red flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-bold">{tx('🚨 ความเสี่ยงวิกฤต: เลเวอเรจตั้งแต่ 50x มีความเสี่ยงถูกล้างพอร์ตอย่างรุนแรง', '🚨 CRITICAL: Leverage ≥50x carries extreme liquidation risk.')}</div>
+                                            <div className="opacity-80 mt-1">{tx('เลเวอเรจสูงใช้มาร์จินเริ่มต้นน้อยลง แต่ทำให้ราคาเคลื่อนไหวเพียงเล็กน้อยก็ส่งผลต่อมาร์จินอย่างรุนแรง', 'High leverage reduces initial margin but makes liquidation much more sensitive to small price moves.')}</div>
+                                        </div>
+                                    </div>
+                                ) : leverage >= 20 ? (
+                                    <div className="p-4 rounded-xl bg-cyber-yellow/10 border border-cyber-yellow/50 text-cyber-yellow text-xs font-mono flex items-start gap-3">
+                                        <Icons.AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                        <div className="font-bold">{tx('⚠️ ความเสี่ยงสูง: เลเวอเรจตั้งแต่ 20x เพิ่มความเสี่ยงถูกล้างพอร์ตอย่างมาก', '⚠️ HIGH RISK: Leverage ≥20x significantly increases liquidation risk.')}</div>
+                                    </div>
+                                ) : null}
+
+                                {/* Risk Inputs */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="p-3 bg-cyber-bg/50 rounded-xl border border-cyber-border space-y-1">
+                                        <label className="text-[11px] text-slate-400 font-mono block">{t.capital}</label>
+                                        <input
+                                            type="number"
+                                            value={portfolioCapital}
+                                            onChange={e => setPortfolioCapital(Math.max(1, Number(e.target.value)))}
+                                            className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 font-mono text-cyber-cyan focus:outline-none focus:border-cyber-cyan"
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-cyber-bg/50 rounded-xl border border-cyber-border space-y-1">
+                                        <label className="text-[11px] text-slate-400 font-mono block">{t.riskPercent}</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={riskPercent}
+                                            onChange={e => setRiskPercent(Math.max(0.1, Number(e.target.value)))}
+                                            className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 font-mono text-cyber-cyan focus:outline-none focus:border-cyber-cyan"
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-cyber-bg/50 rounded-xl border border-cyber-border space-y-1">
+                                        <label className="text-[11px] text-slate-400 font-mono block">{t.takerFee}</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={takerFeeRate}
+                                            onChange={e => setTakerFeeRate(Math.max(0, Number(e.target.value)))}
+                                            className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 font-mono text-cyber-cyan focus:outline-none focus:border-cyber-cyan"
+                                        />
+                                    </div>
+                                </div>
+
+                                {analysis && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="p-4 bg-cyber-bg/60 rounded-xl border border-cyber-border">
+                                            <div className="text-[11px] text-slate-400 font-mono">{t.positionNotional}</div>
+                                            <div className="text-xl font-mono font-bold text-slate-100 mt-1">
+                                                ${analysis.strat2.positionNotional.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="text-xs font-mono text-cyber-cyan mt-1">~ {analysis.strat2.btcPositionSize.toFixed(4)} BTC</div>
+                                        </div>
+
+                                        <div className="p-4 bg-cyber-bg/60 rounded-xl border border-cyber-border">
+                                            <div className="text-[11px] text-slate-400 font-mono">{t.initialMargin}</div>
+                                            <div className="text-xl font-mono font-bold text-cyber-cyan mt-1">
+                                                ${analysis.strat2.initialMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="text-xs font-mono text-slate-400 mt-1">Notional ÷ {leverage}x</div>
+                                        </div>
+
+                                        <div className="p-4 bg-cyber-bg/60 rounded-xl border border-cyber-border">
+                                            <div className="text-[11px] text-slate-400 font-mono">{t.estFees}</div>
+                                            <div className="text-xl font-mono font-bold text-cyber-yellow mt-1">
+                                                ${analysis.strat2.roundTripFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="text-xs font-mono text-slate-400 mt-1">Round-trip @ {takerFeeRate}%</div>
+                                        </div>
+
+                                        <div className="p-4 bg-cyber-bg/60 rounded-xl border border-cyber-border">
+                                            <div className="text-[11px] text-slate-400 font-mono">{t.reqBuffer}</div>
+                                            <div className="text-xl font-mono font-bold text-cyber-green mt-1">
+                                                ${analysis.strat2.recommendedReserve.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="text-xs font-mono text-slate-400 mt-1">Margin + Fees + Volatility</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'layers' && (
+                            <div className="hud-panel rounded-2xl p-6 space-y-6">
+                                <div className="flex justify-between items-center border-b border-cyber-border pb-4">
+                                    <h2 className="text-lg font-bold font-mono text-cyber-cyan flex items-center gap-2">
+                                        <Icons.Layers className="w-5 h-5" />
+                                        {t.indicatorLegend}
+                                    </h2>
+                                    <div className="text-xs font-mono text-slate-400">
+                                        ACTIVE GLOW: <span className="text-cyber-cyan font-bold uppercase">{glowLevel}</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {Object.entries(layerSettings).map(([key, setting]) => (
+                                        <div key={key} className="p-3 border border-cyber-border rounded-xl bg-cyber-bg/50 flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={setting.visible}
+                                                    onChange={e => {
+                                                        const val = e.target.checked;
+                                                        setLayerSettings(prev => ({
+                                                            ...prev,
+                                                            [key]: { ...prev[key], visible: val }
+                                                        }));
+                                                    }}
+                                                    className="w-4 h-4 rounded border-cyber-border bg-cyber-bg text-cyber-cyan focus:ring-0 accent-cyber-cyan cursor-pointer"
+                                                />
+                                                <span className="text-xs font-mono font-semibold text-slate-200">{setting.name}</span>
+                                            </div>
+                                            <input
+                                                type="color"
+                                                value={setting.color.startsWith('#') ? setting.color : '#00E5FF'}
+                                                onChange={e => {
+                                                    const newColor = e.target.value;
+                                                    setLayerSettings(prev => ({
+                                                        ...prev,
+                                                        [key]: { ...prev[key], color: newColor }
+                                                    }));
+                                                }}
+                                                className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                    <footer className="max-w-7xl mx-auto px-4 pb-8 pt-4 text-[11px] leading-relaxed text-slate-500">
+                        <div className="hud-panel rounded-xl p-3 border border-cyber-yellow/20">
+                            <strong className="text-cyber-yellow">{tx('คำเตือนความเสี่ยง:', 'RISK DISCLAIMER:')}</strong> {tx('ข้อมูลและสัญญาณเป็นข้อมูลเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุนหรือการรับประกันผลกำไร ราคาจาก REST API อาจล่าช้า ค่าความเสี่ยง/มาร์จินเป็นค่าประมาณ ไม่ใช่ราคา Liquidation จริง และระบบนี้ไม่ส่งคำสั่งซื้อขาย', 'Data and signals are for research only, not investment advice or profit guarantees. REST data may be delayed; margin/risk figures are estimates, not actual liquidation prices. This app does not place orders.')}
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
