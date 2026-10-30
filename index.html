@@ -1868,49 +1868,48 @@
                                                 Computing Quantitative Signal...
                                             </div>
                                         )}
+
+                                        {/* Selected timeframe paper-performance summary */}
+                                        <section className="mt-5 rounded-xl border-2 border-cyber-yellow/80 bg-slate-950/80 p-3 space-y-3 shadow-[0_0_14px_rgba(250,204,21,0.08)]" aria-live="polite">
+                                            <div className="flex items-center justify-between gap-2 border-b border-cyber-border pb-2">
+                                                <div className="text-xs font-bold font-mono text-cyber-yellow">📊 {tx('สรุปผลย้อนหลัง', 'PERFORMANCE SUMMARY')}</div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[10px] font-mono rounded border border-cyber-cyan/40 px-2 py-1 text-cyber-cyan">{timeframe.toUpperCase()}</span>
+                                                    <button type="button" onClick={loadAllTimeframePerformance} disabled={tfPerformanceStatus === 'loading'} className="text-[10px] rounded border border-cyber-cyan/40 px-2 py-1 text-cyber-cyan disabled:opacity-40" title={tx('อัปเดตผลทุก TF', 'Refresh all timeframes')}>↻</button>
+                                                </div>
+                                            </div>
+                                            {tfPerformanceStatus === 'loading' && !tfPerformance[timeframe] ? (
+                                                <div className="py-5 text-center text-xs text-cyber-cyan">⏳ {tx('กำลังคำนวณข้อมูล TF นี้…', 'Calculating this timeframe…')}</div>
+                                            ) : tfPerformance[timeframe]?.status === 'READY' ? (() => {
+                                                const item = tfPerformance[timeframe];
+                                                const closedCount = item.wins + item.losses;
+                                                return (
+                                                    <div className="space-y-2 text-[11px] font-mono">
+                                                        <div className="flex items-center justify-between"><span className="text-slate-400">{tx('สัญญาณล่าสุด', 'LATEST SIGNAL')}</span><b className={item.lastSignal === 'LONG' ? 'text-cyber-green' : item.lastSignal === 'SHORT' ? 'text-cyber-red' : 'text-cyber-yellow'}>{item.lastSignal === 'LONG' ? '🔵 LONG' : item.lastSignal === 'SHORT' ? '🔴 SHORT' : '⏸ WAIT'}</b></div>
+                                                        <div className="grid grid-cols-3 gap-1 text-center">
+                                                            <div className="rounded bg-cyber-green/10 p-2"><div className="text-cyber-green">✅ TP</div><b className="text-slate-100">{item.wins}</b></div>
+                                                            <div className="rounded bg-cyber-red/10 p-2"><div className="text-cyber-red">❌ SL</div><b className="text-slate-100">{item.losses}</b></div>
+                                                            <div className="rounded bg-cyber-yellow/10 p-2"><div className="text-cyber-yellow">🔄 OPEN</div><b className="text-slate-100">{item.openTrade ? 1 : 0}</b></div>
+                                                        </div>
+                                                        <div className="flex justify-between gap-2"><span className="text-slate-400">{tx('Win Rate (ปิดแล้ว)', 'WIN RATE (CLOSED)')}</span><b className="text-slate-100">{item.winRate === null ? '—' : `${item.winRate.toFixed(1)}%`}</b></div>
+                                                        <div className="flex justify-between gap-2"><span className="text-slate-400">{tx('Net P&L (รวม OPEN)', 'NET P&L (incl. OPEN)')}</span><b className={item.totalNet >= 0 ? 'text-cyber-green' : 'text-cyber-red'}>{item.totalNet >= 0 ? '+' : ''}${item.totalNet.toFixed(2)}</b></div>
+                                                        <div className="flex justify-between gap-2"><span className="text-slate-400">{tx('รายการจำลอง / แท่งปิด', 'PAPER TRADES / CLOSED CANDLES')}</span><b className="text-slate-200">{item.trades} / {item.sample}</b></div>
+                                                        {item.openTrade && <div className="rounded bg-cyber-yellow/10 p-2 text-cyber-yellow">{tx('สถานะ OPEN · P&L ยังไม่รับรู้', 'OPEN position · P&L is unrealized')}: {item.openTrade.net >= 0 ? '+' : ''}${item.openTrade.net.toFixed(2)}</div>}
+                                                        <div className="text-[9px] leading-relaxed text-slate-500">{tx('Paper Backtest จากแท่ง Futures ที่ปิดแล้วของ TF ที่เลือก ไม่ใช่ประวัติการเทรดจริง', 'Paper backtest from closed Futures candles for the selected timeframe; not real trade history.')}</div>
+                                                    </div>
+                                                );
+                                            })() : tfPerformance[timeframe]?.status === 'INSUFFICIENT' ? (
+                                                <div className="text-[11px] text-slate-400">{tx(`ข้อมูลไม่พอ: มี ${tfPerformance[timeframe].sample} แท่ง ต้องมีอย่างน้อย 220`, `Insufficient data: ${tfPerformance[timeframe].sample} candles; at least 220 required`)}</div>
+                                            ) : tfPerformance[timeframe]?.status === 'ERROR' || tfPerformanceStatus === 'error' ? (
+                                                <div className="text-[11px] text-cyber-red">{tx('ดึงข้อมูลประเมินไม่สำเร็จ', 'Performance data unavailable')}</div>
+                                            ) : (
+                                                <div className="text-[11px] text-slate-400">{tx('กำลังเตรียมข้อมูลสรุป…', 'Preparing performance summary…')}</div>
+                                            )}
+                                        </section>
                                     </div>
                                 </div>
 
-                                {/* Per-timeframe historical signal outcome summary */}
-                                <section className="hud-panel rounded-2xl p-5 space-y-4 border border-cyber-cyan/30" aria-live="polite">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyber-border pb-3">
-                                        <div>
-                                            <h3 className="text-sm md:text-base font-bold font-mono text-cyber-cyan flex items-center gap-2">📊 {tx('สรุปผลสัญญาณย้อนหลังแยกตาม Timeframe', 'TIMEFRAME SIGNAL PERFORMANCE')}</h3>
-                                            <p className="text-[11px] text-slate-400 mt-1">{tx('จำลองผลจากแท่งเทียน Futures ที่ปิดแล้ว แยกผล TP / SL / สถานะเปิด', 'Paper evaluation from closed Futures candles; TP / SL / open positions are separated.')}</p>
-                                        </div>
-                                        <button type="button" onClick={loadAllTimeframePerformance} disabled={tfPerformanceStatus === 'loading'} className="px-3 py-2 rounded-lg border border-cyber-cyan/50 text-cyber-cyan text-xs font-bold disabled:opacity-50">{tfPerformanceStatus === 'loading' ? tx('กำลังคำนวณ…', 'CALCULATING…') : tx('↻ อัปเดตทุก TF', '↻ REFRESH ALL TF')}</button>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                        <div className="rounded-lg bg-cyber-bg/70 border border-cyber-border p-3"><div className="text-slate-400">{tx('จำนวน TF', 'TIMEFRAMES')}</div><div className="text-lg font-bold text-cyber-cyan">{Object.values(tfPerformance).filter(x => x.status === 'READY').length}/{SUPPORTED_TIMEFRAMES.length}</div></div>
-                                        <div className="rounded-lg bg-cyber-bg/70 border border-cyber-border p-3"><div className="text-slate-400">{tx('ผลปิดสุทธิรวม', 'CLOSED NET P&L')}</div><div className={`text-lg font-bold ${Object.values(tfPerformance).reduce((a,x)=>a+(x.status==='READY'?x.netClosed:0),0)>=0?'text-cyber-green':'text-cyber-red'}`}>${Object.values(tfPerformance).reduce((a,x)=>a+(x.status==='READY'?x.netClosed:0),0).toFixed(2)}</div></div>
-                                        <div className="rounded-lg bg-cyber-bg/70 border border-cyber-border p-3"><div className="text-slate-400">{tx('TP / SL', 'TP / SL')}</div><div className="text-lg font-bold text-slate-100">{Object.values(tfPerformance).reduce((a,x)=>a+(x.status==='READY'?x.wins:0),0)} / {Object.values(tfPerformance).reduce((a,x)=>a+(x.status==='READY'?x.losses:0),0)}</div></div>
-                                        <div className="rounded-lg bg-cyber-bg/70 border border-cyber-border p-3"><div className="text-slate-400">{tx('อัปเดตล่าสุด', 'LAST UPDATED')}</div><div className="text-xs font-bold text-slate-200 mt-1">{tfPerformanceUpdated || '—'}</div></div>
-                                    </div>
-                                    {tfPerformanceStatus === 'loading' && <div className="text-center py-5 text-cyber-cyan text-xs">⏳ {tx('กำลังดึงข้อมูล Binance Futures และจำลองผลทุก Timeframe…', 'Fetching Binance Futures candles and evaluating all timeframes…')}</div>}
-                                    {tfPerformanceStatus === 'idle' && <div className="text-center py-4 text-slate-400 text-xs">{tx('กำลังเตรียมข้อมูลสรุป…', 'Preparing performance summary…')}</div>}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                                        {SUPPORTED_TIMEFRAMES.map(({id,label,group}) => {
-                                            const item = tfPerformance[id];
-                                            const good = item?.status === 'READY';
-                                            const pnl = good ? item.totalNet : 0;
-                                            return <div key={id} className="rounded-xl border border-cyber-border bg-cyber-bg/60 p-3 space-y-2">
-                                                <div className="flex items-center justify-between"><div className="font-mono font-bold text-cyber-cyan">⏱ {label.toUpperCase()} <span className="text-[10px] text-slate-500 font-normal">{group}</span></div><span className={`text-[10px] px-2 py-1 rounded border ${!item ? 'border-slate-600 text-slate-400' : good ? 'border-cyber-green/40 text-cyber-green' : 'border-cyber-yellow/40 text-cyber-yellow'}`}>{!item ? (tfPerformanceStatus === 'loading' ? tx('รอข้อมูล', 'PENDING') : '—') : good ? tx('ประเมินแล้ว', 'EVALUATED') : item.status === 'INSUFFICIENT' ? tx('ข้อมูลไม่พอ', 'INSUFFICIENT') : tx('ดึงข้อมูลไม่ได้', 'UNAVAILABLE')}</span></div>
-                                                {good ? <>
-                                                    <div className="flex items-center justify-between text-xs"><span className="text-slate-400">{tx('สัญญาณล่าสุด', 'LATEST SIGNAL')}</span><b className={item.lastSignal==='LONG'?'text-cyber-green':item.lastSignal==='SHORT'?'text-cyber-red':'text-cyber-yellow'}>{item.lastSignal==='LONG'?'🔵 LONG':item.lastSignal==='SHORT'?'🔴 SHORT':'⏸ WAIT'}</b></div>
-                                                    <div className="grid grid-cols-3 gap-1 text-center text-[11px]"><div className="rounded bg-cyber-green/10 p-2"><div className="text-cyber-green">✅ TP</div><b>{item.wins}</b></div><div className="rounded bg-cyber-red/10 p-2"><div className="text-cyber-red">❌ SL</div><b>{item.losses}</b></div><div className="rounded bg-cyber-yellow/10 p-2"><div className="text-cyber-yellow">🔄 {tx('เปิด', 'OPEN')}</div><b>{item.openTrade?1:0}</b></div></div>
-                                                    <div className="flex justify-between text-xs"><span className="text-slate-400">{tx('อัตราชนะ (ปิดแล้ว)', 'WIN RATE (CLOSED)')}</span><b>{item.winRate === null ? '—' : `${item.winRate.toFixed(1)}%`}</b></div>
-                                                    <div className="flex justify-between text-xs"><span className="text-slate-400">{tx('กำไร/ขาดทุนสุทธิ (รวม OPEN ตามราคาล่าสุด)', 'NET P&L (incl. OPEN at latest price)')}</span><b className={pnl>=0?'text-cyber-green':'text-cyber-red'}>{pnl>=0?'+':''}${pnl.toFixed(2)}</b></div>
-                                                    {item.openTrade && <div className="text-[10px] text-cyber-yellow">🔄 {tx('สถานะจำลองยังเปิด · กำไร/ขาดทุนลอยตัว', 'Paper position still open · unrealized P&L')}: {item.openTrade.net >= 0 ? '+' : ''}${item.openTrade.net.toFixed(2)} · {tx('ยังไม่ใช่ผลปิดจริง', 'not realized')}</div>}
-                                                    <div className="text-[10px] text-slate-500">{tx(`แท่งปิด ${item.sample} · จำลอง ${item.trades} รายการ · ราคา ${item.lastPrice.toFixed(2)}`, `Closed candles ${item.sample} · ${item.trades} simulated trades · Price ${item.lastPrice.toFixed(2)}`)}</div>
-                                                </> : <div className="text-[11px] text-slate-500">{item?.status === 'INSUFFICIENT' ? tx(`มีแท่งเทียนปิดเพียง ${item.sample} ต้องมีอย่างน้อย 220`, `Only ${item.sample} closed candles; at least 220 required`) : item?.message || tx('ยังไม่มีผลประเมินจากข้อมูลจริง', 'No verified result from market data yet')}</div>}
-                                            </div>;
-                                        })}
-                                    </div>
-                                    <div className="rounded-lg border border-cyber-yellow/30 bg-cyber-yellow/5 p-3 text-[10px] leading-relaxed text-slate-400">
-                                        <b className="text-cyber-yellow">⚠️ {tx('วิธีคำนวณและข้อจำกัด', 'METHODOLOGY & LIMITATIONS')}</b><br/>
-                                        {tx('นี่คือผลจำลองย้อนหลัง (Paper Backtest) ไม่ใช่ประวัติการเทรดจริง: ใช้สัญญาณ EMA20/50/200 + RSI ตามเงื่อนไขระบบ, เข้า ณ ราคาปิดแท่งสัญญาณ, SL/TP ใช้สูตร Pivot R1/S1 แบบเดียวกับแผงสัญญาณ, เงินจำลอง 1,000 USDT ต่อรายการ และสมมติค่าธรรมเนียม Taker 0.05% ต่อด้าน (ไป-กลับ 0.10%) ยังไม่รวม Slippage/Funding และ Leverage; หากแท่งเดียวแตะทั้ง TP/SL จะนับเป็น SL แบบระมัดระวัง สถานะที่ยังไม่แตะเป้าหมายแสดงเป็น OPEN และคิดมูลค่าตามราคาล่าสุด ไม่ใช่กำไรที่รับรู้แล้ว ผลลัพธ์ขึ้นกับจำนวนแท่งย้อนหลังที่ Binance ส่งให้แต่ละ TF', 'This is a historical paper backtest, not actual trading history: EMA20/50/200 + RSI signal rules; entry at signal candle close; SL/TP use the same rolling Pivot R1/S1 rules as the signal panel; fixed 1,000 USDT notional; assumed 0.05% taker fee per side (0.10% round trip). Slippage, funding and leverage are excluded. If TP and SL are both touched in one candle, it is conservatively counted as SL. Unclosed trades are shown as OPEN and marked to latest price, not realized profit. Results depend on Binance historical candle availability for each timeframe.')}
-                                    </div>
-                                </section>
+
                             </div>
                         )}
 
