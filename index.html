@@ -1391,15 +1391,13 @@
                 <div lang={lang} className={`min-h-screen glow-${glowLevel} ${theme === 'dark' ? 'bg-[#04060A] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
                     <div aria-live="polite" aria-atomic="false" className="fixed right-3 top-20 z-[100] w-[min(92vw,380px)] space-y-2">
                         {toasts.map(toast => (
-                            <div key={toast.toastId} className={`hud-toast hud-panel rounded-xl p-3 border shadow-2xl ${toast.type === 'ERROR' ? 'border-cyber-red/60 bg-[#160912]/95' : toast.type === 'WARNING' ? 'border-cyber-yellow/60 bg-[#171307]/95' : toast.type === 'SIGNAL' ? 'border-cyber-green/60 bg-[#061711]/95' : 'border-cyber-cyan/50 bg-[#07121b]/95'}`}>
+                            <div key={toast.toastId} role="status" className={`hud-toast hud-panel rounded-xl p-3 border shadow-2xl ${toast.type === 'ERROR' ? 'border-cyber-red/60 bg-[#160912]/95' : toast.type === 'WARNING' ? 'border-cyber-yellow/60 bg-[#171307]/95' : toast.type === 'SIGNAL' ? 'border-cyber-green/60 bg-[#061711]/95' : 'border-cyber-cyan/50 bg-[#07121b]/95'}`}>
                                 <div className="flex items-start gap-2.5">
-                                    <span className={`mt-0.5 ${toast.type === 'ERROR' ? 'text-cyber-red' : toast.type === 'WARNING' ? 'text-cyber-yellow' : toast.type === 'SIGNAL' ? 'text-cyber-green' : 'text-cyber-cyan'}`}>
-                                        {toast.type === 'ERROR' ? <Icons.AlertTriangle className="w-4 h-4" /> : toast.type === 'SIGNAL' ? <Icons.Target className="w-4 h-4" /> : <Icons.Bell className="w-4 h-4" />}
-                                    </span>
+                                    <span className="text-xl leading-none" aria-hidden="true">{toast.type === 'ERROR' ? '❌' : toast.type === 'WARNING' ? '⚠️' : toast.type === 'SIGNAL' ? '📌' : 'ℹ️'}</span>
                                     <div className="min-w-0 flex-1">
                                         <div className="text-[11px] font-mono font-bold tracking-wide text-slate-100">{toast.title}</div>
                                         <div className="mt-1 text-xs text-slate-300 break-words">{toast.msg}</div>
-                                        <div className="mt-1 text-[9px] font-mono text-slate-500">{toast.time}</div>
+                                        <div className="mt-2 border-t border-white/10 pt-1.5 text-[10px] font-mono text-slate-400">⏰ {toast.time}</div>
                                     </div>
                                     <button type="button" aria-label="Dismiss notification" onClick={() => setToasts(prev => prev.filter(item => item.toastId !== toast.toastId))} className="text-slate-500 hover:text-white px-1">×</button>
                                 </div>
@@ -1480,7 +1478,7 @@
 
                                     {/* Notifications Drawer */}
                                     {isNotifOpen && (
-                                        <div className="absolute right-0 mt-2 w-80 sm:w-96 hud-panel rounded-xl shadow-2xl p-4 z-50 border border-cyber-cyan/40 space-y-3 font-mono">
+                                        <div className="absolute right-0 mt-2 w-[min(94vw,430px)] hud-panel rounded-xl shadow-2xl p-4 z-50 border border-cyber-cyan/40 space-y-3 font-mono">
                                             <div className="flex justify-between items-center border-b border-cyber-border pb-2">
                                                 <div className="flex items-center gap-2">
                                                     <Icons.Bell className="w-4 h-4 text-cyber-cyan" />
@@ -1511,14 +1509,14 @@
                                                 </div>
                                             </div>
 
-                                            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                                            <div className="max-h-[min(65vh,560px)] overflow-y-auto space-y-2 pr-1">
                                                 {notifications.length === 0 ? (
                                                     <div className="text-center text-xs text-slate-500 py-4">{tx('ยังไม่มีการแจ้งเตือน', 'No alerts in log')}</div>
                                                 ) : (
                                                     notifications.map(n => (
                                                         <div key={n.id} className={`p-2.5 rounded border text-xs ${!n.read ? 'ring-1 ring-cyber-cyan/15 ' : ''}${n.type === 'ERROR' ? 'border-cyber-red/40 bg-cyber-red/10 text-rose-300' : n.type === 'WARNING' ? 'border-cyber-yellow/40 bg-cyber-yellow/10 text-amber-200' : n.type === 'SIGNAL' ? 'border-cyber-green/40 bg-cyber-green/10 text-emerald-300' : 'border-cyber-border bg-cyber-bg text-slate-300'}`}>
-                                                            <div className="flex justify-between items-center gap-2 font-bold">
-                                                                <span className="min-w-0 break-words">[{n.type}] {n.title}</span>
+                                                            <div className="flex justify-between items-start gap-2 font-bold">
+                                                                <span className="min-w-0 break-words">{n.type === 'ERROR' ? '❌' : n.type === 'WARNING' ? '⚠️' : n.type === 'SIGNAL' ? '📌' : 'ℹ️'} {n.title}</span>
                                                                 <span className="text-[9px] text-slate-500 whitespace-nowrap">{n.time}</span>
                                                             </div>
                                                             <div className="text-[11px] mt-1 text-slate-400 break-words">{n.msg}</div>
