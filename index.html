@@ -686,6 +686,8 @@
             const ema50 = Indicators.calcEMA(candles, 50);
             const ema200 = Indicators.calcEMA(candles, 200);
             const rsi = Indicators.calcRSI(candles, 14);
+            // Keep the fee rate in function scope: it is also used in the summary returned below.
+            const feeRate = Math.max(0, Number(takerFeePct) || 0) / 100;
             const trades = [];
             let previousSignal = 'WAIT';
             let i = 200;
@@ -712,7 +714,6 @@
                 const tp = signal === 'LONG' ? Math.max(r1, entry * 1.005) : Math.min(s1, entry * 0.995);
                 const notional = 1000;
                 const qty = notional / entry;
-                const feeRate = Math.max(0, Number(takerFeePct) || 0) / 100;
                 let exit = null, outcome = 'OPEN', exitIndex = candles.length - 1;
                 for (let j = i + 1; j < candles.length; j++) {
                     const bar = candles[j];
